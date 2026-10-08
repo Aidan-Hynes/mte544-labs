@@ -55,16 +55,13 @@ class motion_executioner(Node):
 
         # TODO Part 5: Create below the subscription to the topics corresponding to the respective sensors
         # IMU subscription
-        
-        ...
+        self.create_subscription(Imu, '/imu', self.imu_callback, qos)
         
         # ENCODER subscription
-
-        ...
+        self.create_subscription(Odometry, '/odom', self.odom_callback, qos)
         
         # LaserScan subscription 
-        
-        ...
+        self.create_subscription(LaserScan, '/scan', self.laser_callback, qos)
         
         self.create_timer(0.1, self.timer_callback)
 
@@ -76,23 +73,51 @@ class motion_executioner(Node):
     # You can save the needed fields into a list, and pass the list to the log_values function in utilities.py
 
     def imu_callback(self, imu_msg: Imu):
-        ...    # log imu msgs
+        stamp = Time.from_msg(imu_msg.header.stamp).nanoseconds
+        acc_x = imu_msg.linear_acceleration.x
+        acc_y = imu_msg.linear_acceleration.y
+        angular_z = imu_msg.angular_velocity.z
+
+        self.imu_logger.log_values([acc_x, acc_y, angular_z, stamp])
+        self.imu_initialized = True
         
     def odom_callback(self, odom_msg: Odometry):
-        
-        ... # log odom msgs
+        stamp = Time.from_msg(odom_msg.header.stamp).nanoseconds
+        x = odom_msg.pose.pose.position.x
+        y = odom_msg.pose.pose.position.y
+
+        # quaternion from odometry
+        quat = [
+            odom_msg.pose.pose.orientation.x,
+            odom_msg.pose.pose.orientation.y,
+            odom_msg.pose.pose.orientation.z,
+            odom_msg.pose.pose.orientation.w
+        ]
+
+        # euler angle
+        th = euler_from_quaternion(quat)
+
+        self.odom_logger.log_values([x, y, th, stamp])
+        self.odom_initialized = True
                 
     def laser_callback(self, laser_msg: LaserScan):
-        
-        ... # log laser msgs with position msg at that time
+        stamp = Time.from_msg(laser_msg.header.stamp).nanoseconds
+        # ranges is from LIDAR, field contains an array
+        # of floating point numbers, that takes a reading
+        # for every angle increment in 360 degrees
+        ranges = " ".join([str(r) for r in laser_msg.ranges])
+        angle_increment = laser_msg.angle_increment
+
+        self.laser_logger.log_values([ranges, angle_increment, stamp])
+        self.laser_initialized = True
                 
     def timer_callback(self):
         
-        # if self.odom_initialized and self.laser_initialized and self.imu_initialized:
-        #     self.successful_init=True
+        if self.odom_initialized and self.laser_initialized and self.imu_initialized:
+            self.successful_init=True
             
-        # if not self.successful_init:
-        #     return
+        if not self.successful_init:
+            return
         
         cmd_vel_msg=Twist()
         
