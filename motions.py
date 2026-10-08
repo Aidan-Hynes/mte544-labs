@@ -6,7 +6,7 @@ from rclpy.node import Node
 from utilities import Logger, euler_from_quaternion
 from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
 
-# TODO Part 3: Import message types needed: 
+# Part 3: Import message types needed: 
     # For sending velocity commands to the robot: Twist
     # For the sensors: Imu, LaserScan, and Odometry
 # Check the online documentation to fill in the lines below

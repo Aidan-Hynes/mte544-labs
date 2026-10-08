@@ -17,9 +17,7 @@ class Logger:
             
             file.write(header_str)
 
-
     def log_values(self, values_list):
-
         with open(self.filename, 'a') as file:
             vals_str=""
 
@@ -30,25 +28,20 @@ class Logger:
             
             file.write(vals_str)
             
-
     def save_log(self):
         pass
 
 class FileReader:
     def __init__(self, filename):
-        
         self.filename = filename
         
-        
     def read_file(self):
-        
         read_headers=False
-
         table=[]
         headers=[]
+        
         with open(self.filename, 'r') as file:
             # Skip the header line
-
             if not read_headers:
                 for line in file:
                     values=line.strip().split(',')
@@ -66,20 +59,25 @@ class FileReader:
             # Read each line and extract values
             for line in file:
                 values = line.strip().split(',')
-                
                 row=[]                
                 
                 for val in values:
                     if val=='':
                         break
-                    row.append(float(val.strip()))
+                    
+                    cleaned_val = val.strip()
+                    
+                    # SAFETY CHECK: Prevent strings like laser ranges from crashing the float cast
+                    if ' ' in cleaned_val:
+                        row.append(cleaned_val)
+                    else:
+                        row.append(float(cleaned_val))
 
                 table.append(row)
         
         return headers, table
 
-
-# TODO Part 5: Implement the conversion from Quaternion to Euler Angles
+# Part 5: Implement the conversion from Quaternion to Euler Angles
 def euler_from_quaternion(quat):
     """
     Convert quaternion (w in last place) to euler roll, pitch, yaw.
@@ -88,7 +86,6 @@ def euler_from_quaternion(quat):
     x, y, z, w = quat
     t3 = +2.0 * (w * z + x * y)
     t4 = +1.0 - 2.0 * (y * y + z * z)
-    yaw = atan2(t3, t4) # just unpack yaw
+    yaw = atan2(t3, t4)
+    
     return yaw
-
-
