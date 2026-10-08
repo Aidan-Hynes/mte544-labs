@@ -88,11 +88,11 @@ class motion_executioner(Node):
                 
     def timer_callback(self):
         
-        if self.odom_initialized and self.laser_initialized and self.imu_initialized:
-            self.successful_init=True
+        # if self.odom_initialized and self.laser_initialized and self.imu_initialized:
+        #     self.successful_init=True
             
-        if not self.successful_init:
-            return
+        # if not self.successful_init:
+        #     return
         
         cmd_vel_msg=Twist()
         
@@ -117,17 +117,31 @@ class motion_executioner(Node):
     def make_circular_twist(self):
         
         msg=Twist()
-        ... # fill up the twist msg for circular motion
+        msg.linear.x = 0.5
+        msg.angular.z = -0.5 # negative so it doesnt run into wall in sim
+
         return msg
 
     def make_spiral_twist(self):
         msg=Twist()
-        ... # fill up the twist msg for spiral motion
+
+        ## we should make a limit on radius?
+        ## so that the speed doesn't keep on increasing.
+        # ASK TA
+        if (0.1 + self.radius_  < 0.25):
+            self.radius_ += 0.005
+        
+        msg.linear.x = 0.1 + self.radius_
+        msg.angular.z = 0.5
+            
+
         return msg
     
     def make_acc_line_twist(self):
         msg=Twist()
-        ... # fill up the twist msg for line motion
+        self.radius_ += 0.005
+        msg.linear.x = 0.1 + self.radius_
+        msg.angular.z = 0.0
         return msg
 
 import argparse
