@@ -26,7 +26,7 @@ motion_types=['circle', 'spiral', 'line']
 
 class motion_executioner(Node):
     
-    def __init__(self, motion_type=0):
+    def __init__(self, motion_type=0, environment="sim"):
         
         super().__init__("motion_types")
         
@@ -49,8 +49,12 @@ class motion_executioner(Node):
         self.laser_logger=Logger('laser_content_'+str(motion_types[motion_type])+'.csv', headers=["ranges", "angle_increment", "stamp"])
         
         # TODO Part 3: Create the QoS profile by setting the proper parameters in (...)
-        qos=QoSProfile(depth=10, reliability=ReliabilityPolicy.RELIABLE,
-                       history=HistoryPolicy.KEEP_LAST)
+        if environment == 'sim':
+            qos=QoSProfile(depth=10, reliability=ReliabilityPolicy.RELIABLE,
+                        history=HistoryPolicy.KEEP_LAST)
+        else:
+            qos=QoSProfile(depth=10, reliability=ReliabilityPolicy.BEST_EFFORT,
+                        history=HistoryPolicy.KEEP_LAST)
         # sets last 10 samples to store and reliabiluty set to RELIABLE
         # TODO: need to test ros2 topic info /odom --verbose ON TURTLEBOT IN LAB
 
@@ -182,6 +186,7 @@ if __name__=="__main__":
 
 
     argParser.add_argument("--motion", type=str, default="circle")
+    argParser.add_argument("--env", type=str, default="sim")
 
 
 
@@ -191,12 +196,12 @@ if __name__=="__main__":
 
     if args.motion.lower() == "circle":
 
-        ME=motion_executioner(motion_type=CIRCLE)
+        ME=motion_executioner(motion_type=CIRCLE, environment=args.env.lower())
     elif args.motion.lower() == "line":
-        ME=motion_executioner(motion_type=ACC_LINE)
+        ME=motion_executioner(motion_type=ACC_LINE, environment=args.env.lower())
 
     elif args.motion.lower() =="spiral":
-        ME=motion_executioner(motion_type=SPIRAL)
+        ME=motion_executioner(motion_type=SPIRAL, environment=args.env.lower())
 
     else:
         print(f"we don't have {arg.motion.lower()} motion type")
