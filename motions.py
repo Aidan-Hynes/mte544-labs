@@ -148,8 +148,8 @@ class motion_executioner(Node):
         
         msg=Twist()
         
-        target_max_radius = 1.0   # meters
-        angular_speed = -0.5      # rad/s (negative for clockwise)
+        target_max_radius = 0.25  # meters
+        angular_speed = -2     # rad/s (negative for clockwise)
         
         # v = omega * R (use abs(omega) so linear speed stays positive)
         linear_speed = abs(angular_speed) * target_max_radius
@@ -174,7 +174,7 @@ class motion_executioner(Node):
         if (self.current_linear_velocity  < 0.5):
             self.current_linear_velocity += 0.002
         
-        msg.linear.x = 0.1 + self.current_linear_velocity
+        msg.linear.x = self.current_linear_velocity
         msg.angular.z = 0.5
             
 
