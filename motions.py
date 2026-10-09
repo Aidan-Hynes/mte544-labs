@@ -33,6 +33,7 @@ class motion_executioner(Node):
         self.type=motion_type
         
         self.radius_=0.0
+        self.current_linear_velocity=0.0
         
         self.successful_init=False
         self.imu_initialized=False
@@ -153,10 +154,10 @@ class motion_executioner(Node):
         ## we should make a limit on radius?
         ## so that the speed doesn't keep on increasing.
         # ASK TA
-        if (0.1 + self.radius_  < 0.25):
-            self.radius_ += 0.005
+        if (self.current_linear_velocity  < 0.5):
+            self.current_linear_velocity += 0.002
         
-        msg.linear.x = 0.1 + self.radius_
+        msg.linear.x = 0.1 + self.current_linear_velocity
         msg.angular.z = 0.5
             
 
@@ -164,8 +165,11 @@ class motion_executioner(Node):
     
     def make_acc_line_twist(self):
         msg=Twist()
-        self.radius_ += 0.005
-        msg.linear.x = 0.1 + self.radius_
+
+        max_linear_vel = 0.5  # Adjust based on physical lab robot limits
+        self.current_linear_velocity = min(self.current_linear_velocity + 0.005, max_linear_vel)
+    
+        msg.linear.x = self.current_linear_velocity
         msg.angular.z = 0.0
         return msg
 
