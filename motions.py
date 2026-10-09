@@ -147,9 +147,22 @@ class motion_executioner(Node):
     def make_circular_twist(self):
         
         msg=Twist()
-        msg.linear.x = 0.5
-        msg.angular.z = -0.5 # negative so it doesnt run into wall in sim
+        
+        target_max_radius = 1.0   # meters
+        angular_speed = -0.5      # rad/s (negative for clockwise)
+        
+        # v = omega * R (use abs(omega) so linear speed stays positive)
+        linear_speed = abs(angular_speed) * target_max_radius
+        
+        # Cap to robot hardware safety limit (TurtleBot3 Burger ~0.22, Waffle ~0.26 m/s)
+        max_safe_v = 0.22
+        if linear_speed > max_safe_v:
+            linear_speed = max_safe_v
+            # Adjust angular velocity so radius doesn't shrink
+            angular_speed = -1.0 * (linear_speed / target_max_radius)
 
+        msg.linear.x = linear_speed
+        msg.angular.z = angular_speed
         return msg
 
     def make_spiral_twist(self):
