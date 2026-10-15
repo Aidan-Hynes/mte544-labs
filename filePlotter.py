@@ -24,10 +24,35 @@ def plot_errors(filename):
     for i in range(0, stamp_idx):
         if not isinstance(values[0][i], float):
             continue
-            
-        plt.plot(time_list, [row[i] for row in values], label=headers[i])
+
+        header_name = headers[i]
+
+        if "acc" in header_name.lower():
+            label = header_name + " (m/s^2)"
+
+        elif "ang" in header_name.lower():
+           label = header_name + " (rad/s)"
+
+        elif header_name.lower() in ["x", "y"]:
+            label = header_name +  " (m)"
+
+        elif "th" in header_name.lower():
+            label = header_name + " (rad)"
+
+        else:
+            label = header_name
+
+        plt.plot(time_list, [row[i] for row in values], label=label)
     
-    plt.title(f"Data Plot for {filename}")
+    file_lower = filename.lower()
+    if "imu" in file_lower:
+        title_str = f"IMU Sensor Measurements - {filename}"
+    elif "odom" in file_lower:
+        title_str = f"Odometry Measurements - {filename}"
+    else:
+        title_str = f"Sensor Data Plot - {filename}"
+
+    plt.title(title_str)
     plt.xlabel("Time (seconds)")
     plt.ylabel("Measurements")
     plt.legend()
@@ -44,7 +69,6 @@ def plot_laser(filename):
     # The manual asks to plot ONLY ONE row. We will grab the very last row 
     # to see what the room looked like at the end of the motion.
     row = values[-1]
-    
     ranges_str = row[0]
     angle_increment = row[1]
     
@@ -56,20 +80,20 @@ def plot_laser(filename):
     
     # Convert polar to Cartesian
     for i, r_str in enumerate(ranges):
-        # 1. Clean the NaN/Inf data
+        # clean the NaN/Inf data
         if r_str.lower() in ['inf', 'nan', '-inf', '']:
             continue
             
         r = float(r_str)
         
-        # Sometimes sensors return 0.0 for errors, filter those out too
+        # filter sensor readings with radius 0
         if r <= 0.0:
             continue
             
-        # Calculate the angle for this specific laser beam
+        # calculate the angle for this specific laser beam
         theta = i * angle_increment
         
-        # 2. Convert to Cartesian pose data
+        # convert to Cartesian pose data
         x = r * math.cos(theta)
         y = r * math.sin(theta)
         

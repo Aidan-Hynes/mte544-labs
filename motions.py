@@ -6,20 +6,13 @@ from rclpy.node import Node
 from utilities import Logger, euler_from_quaternion
 from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
 
-# Part 3: Import message types needed: 
-    # For sending velocity commands to the robot: Twist
-    # For the sensors: Imu, LaserScan, and Odometry
-# Check the online documentation to fill in the lines below
+# import required messages.
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import Imu
 from sensor_msgs.msg import LaserScan
 from nav_msgs.msg import Odometry
 
 from rclpy.time import Time
-
-# You may add any other imports you may need/want to use below
-# import ...
-
 
 CIRCLE=0; SPIRAL=1; ACC_LINE=2
 motion_types=['circle', 'spiral', 'line']
@@ -40,7 +33,7 @@ class motion_executioner(Node):
         self.odom_initialized=False
         self.laser_initialized=False
         
-        # TODO Part 3: Create a publisher to send velocity commands by setting the proper parameters in (...)
+        # Create a publisher to send Twist messages to /cmd_vel topic
         self.vel_publisher=self.create_publisher(Twist, '/cmd_vel', 10)
                 
         # loggers
@@ -48,17 +41,15 @@ class motion_executioner(Node):
         self.odom_logger=Logger('odom_content_'+str(motion_types[motion_type])+'.csv', headers=["x","y","th", "stamp"])
         self.laser_logger=Logger('laser_content_'+str(motion_types[motion_type])+'.csv', headers=["ranges", "angle_increment", "stamp"])
         
-        # TODO Part 3: Create the QoS profile by setting the proper parameters in (...)
+        #Create the QoS profile dependant on the environment
         if environment == 'sim':
             qos=QoSProfile(depth=10, reliability=ReliabilityPolicy.RELIABLE,
                         history=HistoryPolicy.KEEP_LAST)
         else:
             qos=QoSProfile(depth=10, reliability=ReliabilityPolicy.BEST_EFFORT,
                         history=HistoryPolicy.KEEP_LAST)
-        # sets last 10 samples to store and reliabiluty set to RELIABLE
-        # TODO: need to test ros2 topic info /odom --verbose ON TURTLEBOT IN LAB
 
-        # TODO Part 5: Create below the subscription to the topics corresponding to the respective sensors
+        # create subscriptions to the topics corresponding to the respective sensors
         # IMU subscription
         self.create_subscription(Imu, '/imu', self.imu_callback, qos)
         
@@ -70,13 +61,7 @@ class motion_executioner(Node):
         
         self.create_timer(0.1, self.timer_callback)
 
-
-    # TODO Part 5: Callback functions: complete the callback functions of the three sensors to log the proper data.
-    # To also log the time you need to use the rclpy Time class, each ros msg will come with a header, and then
-    # inside the header you have a stamp that has the time in seconds and nanoseconds, you should log it in nanoseconds as 
-    # such: Time.from_msg(imu_msg.header.stamp).nanoseconds
-    # You can save the needed fields into a list, and pass the list to the log_values function in utilities.py
-
+    # IMU callback. Gets the timestamp, linear acceleration components and angular velocity
     def imu_callback(self, imu_msg: Imu):
         stamp = Time.from_msg(imu_msg.header.stamp).nanoseconds
         acc_x = imu_msg.linear_acceleration.x
@@ -85,7 +70,10 @@ class motion_executioner(Node):
 
         self.imu_logger.log_values([acc_x, acc_y, angular_z, stamp])
         self.imu_initialized = True
-        
+
+    # odometer callback. Gets the timestamp and x/y position.
+    # then gets the quaternion from the orientationd ata and converts it to
+    # our yaw euler angle
     def odom_callback(self, odom_msg: Odometry):
         stamp = Time.from_msg(odom_msg.header.stamp).nanoseconds
         x = odom_msg.pose.pose.position.x
@@ -99,12 +87,13 @@ class motion_executioner(Node):
             odom_msg.pose.pose.orientation.w
         ]
 
-        # euler angle
+        # euler angle (yaw)
         th = euler_from_quaternion(quat)
 
         self.odom_logger.log_values([x, y, th, stamp])
         self.odom_initialized = True
-                
+
+    # Laser callback. Gets the timestamp and LIDAR ranges + angle increment
     def laser_callback(self, laser_msg: LaserScan):
         stamp = Time.from_msg(laser_msg.header.stamp).nanoseconds
         # ranges is from LIDAR, field contains an array
