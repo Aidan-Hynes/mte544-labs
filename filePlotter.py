@@ -110,6 +110,42 @@ def plot_laser(filename):
     plt.axis('equal') # Forces the X and Y grid to be 1:1 ratio so the room doesn't look squished
     plt.show()
 
+def plot_trajectory(filename):
+    headers, values = FileReader(filename).read_file()
+    if not values:
+        return
+
+    # Find the indices for 'x' and 'y' headers
+    x_idx, y_idx = -1, -1
+    for i, h in enumerate(headers):
+        if h.lower() == 'x':
+            x_idx = i
+        elif h.lower() == 'y':
+            y_idx = i
+
+    if x_idx == -1 or y_idx == -1:
+        print(f"Could not find 'x' and 'y' columns in {filename} for trajectory plot.")
+        return
+
+    x_vals = [row[x_idx] for row in values]
+    y_vals = [row[y_idx] for row in values]
+
+    # Plot X vs Y path
+    plt.figure(figsize=(8, 8))
+    plt.plot(x_vals, y_vals, label='Robot Path', color='blue', linewidth=1.5)
+    
+    # Mark start and end points for clarity
+    plt.scatter(x_vals[0], y_vals[0], color='green', s=60, label='Start')
+    plt.scatter(x_vals[-1], y_vals[-1], color='red', s=60, label='End')
+
+    plt.title(f"Odometry Trajectory (X vs Y) - {filename}")
+    plt.xlabel("X (meters)")
+    plt.ylabel("Y (meters)")
+    plt.legend()
+    plt.grid(True)
+    plt.axis('equal')
+    plt.show()
+
 if __name__=="__main__":
     parser = argparse.ArgumentParser(description='Process some files.')
     parser.add_argument('--files', nargs='+', required=True, help='List of CSV files to process')
@@ -121,6 +157,9 @@ if __name__=="__main__":
         # If the filename has "laser" in it, use our new Cartesian plotter
         if "laser" in filename.lower():
             plot_laser(filename)
-        # Otherwise, use the standard line graph plotter for IMU and Odom
+        elif "odom" in filename.lower():
+            plot_errors(filename)
+            plot_trajectory(filename)
+        # Otherwise, use the standard line graph plotter for IMU
         else:
             plot_errors(filename)
