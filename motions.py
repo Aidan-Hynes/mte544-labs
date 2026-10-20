@@ -131,19 +131,19 @@ class motion_executioner(Node):
         self.vel_publisher.publish(cmd_vel_msg)
         
     
-    # TODO Part 4: Motion functions: complete the functions to generate the proper messages corresponding to the desired motions of the robot
+    # Part 4: Motion functions
 
     def make_circular_twist(self):
         
         msg=Twist()
         
         target_max_radius = 0.25  # meters
-        angular_speed = -2     # rad/s (negative for clockwise)
+        angular_speed = -1     # rad/s (negative for clockwise)
         
         # v = omega * R (use abs(omega) so linear speed stays positive)
         linear_speed = abs(angular_speed) * target_max_radius
         
-        # Cap to robot hardware safety limit (TurtleBot3 Burger ~0.22, Waffle ~0.26 m/s)
+        # Cap max speed
         max_safe_v = 0.22
         if linear_speed > max_safe_v:
             linear_speed = max_safe_v
@@ -157,9 +157,8 @@ class motion_executioner(Node):
     def make_spiral_twist(self):
         msg=Twist()
 
-        ## we should make a limit on radius?
-        ## so that the speed doesn't keep on increasing.
-        # ASK TA
+        # increase linear velocity when keeping angular velocity
+        # constant (thus increasing radius)
         if (self.current_linear_velocity  < 0.5):
             self.current_linear_velocity += 0.002
         
@@ -172,7 +171,8 @@ class motion_executioner(Node):
     def make_acc_line_twist(self):
         msg=Twist()
 
-        max_linear_vel = 0.5  # Adjust based on physical lab robot limits
+        max_linear_vel = 0.5 
+        # increase linear velocity each time
         self.current_linear_velocity = min(self.current_linear_velocity + 0.005, max_linear_vel)
     
         msg.linear.x = self.current_linear_velocity
