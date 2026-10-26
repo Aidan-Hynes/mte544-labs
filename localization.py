@@ -3,6 +3,7 @@ import sys
 from utilities import Logger, euler_from_quaternion
 from rclpy.time import Time
 from rclpy.node import Node
+from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
 
 from rclpy.qos import QoSProfile
 from nav_msgs.msg import Odometry as odom
@@ -12,32 +13,44 @@ from rclpy import init, spin
 rawSensor = 0
 class localization(Node):
     
-    def __init__(self, localizationType=rawSensor):
+    def __init__(self, localizationType=rawSensor, environment="sim"):
 
         super().__init__("localizer")
         
-        # TODO Part 3: Define the QoS profile variable based on whether you are using the simulation (Turtlebot 3 Burger) or the real robot (Turtlebot 4)
-        # Remember to define your QoS profile based on the information available in "ros2 topic info /odom --verbose" as explained in Tutorial 3
-
-        odom_qos=...
+        # Create the QoS profile dependant on the environment
+        if environment == 'sim':
+            odom_qos=QoSProfile(depth=10, reliability=ReliabilityPolicy.RELIABLE,
+                        history=HistoryPolicy.KEEP_LAST)
+        else:
+            odom_qos=QoSProfile(depth=10, reliability=ReliabilityPolicy.BEST_EFFORT,
+                        history=HistoryPolicy.KEEP_LAST)
         
         self.loc_logger=Logger("robot_pose.csv", ["x", "y", "theta", "stamp"])
         self.pose=None
         
+        # Part 3: subscribe to the position sensor topic (Odometry)
         if localizationType == rawSensor:
-        # TODO Part 3: subscribe to the position sensor topic (Odometry)
-        # ...
+            self.create_subscription(odom, '/odom', self.odom_callback, odom_qos)
         else:
             print("This type doesn't exist", sys.stderr)
     
     
     def odom_callback(self, pose_msg):
-        
-        # TODO Part 3: Read x,y, theta, and record the stamp
-        self.pose=[ ... ]
-        
+        # Part 3: Read x,y, theta, and record the stamp
+        x = pose_msg.pose.pose.position.x
+        y = pose_msg.pose.pose.position.y
+
+        quat = [
+            pose_msg.pose.pose.orientation.x,
+            pose_msg.pose.pose.orientation.y,
+            pose_msg.pose.pose.orientation.z,
+            pose_msg.pose.pose.orientation.w
+        ]
+
+        theta = euler_from_quaternion(quat)
+
         # Log the data
-        self.loc_logger.log_values([self.pose[0], self.pose[1], self.pose[2], Time.from_msg(self.pose[3]).nanoseconds])
+        self.loc_logger.log_values([x, y, theta, Time.from_msg(self.pose[3]).nanoseconds])
     
     def getPose(self):
         return self.pose
