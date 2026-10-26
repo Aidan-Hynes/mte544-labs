@@ -1,3 +1,4 @@
+import argparse
 import sys
 
 from utilities import Logger, euler_from_quaternion
@@ -55,13 +56,16 @@ class localization(Node):
     def getPose(self):
         return self.pose
 
-# TODO Part 3
-# Here put a guard that makes the node run, ONLY when run as a main thread!
+# Part 3: Guard that makes the node run, ONLY when run as a main thread!
 # This is to make sure this node functions right before using it in decision.py
     
 if __name__ == "__main__":
+    argParser = argparse.ArgumentParser(description="Localization node")
+    argParser.add_argument("--env", default="sim", help="Environment to run in (sim or real)")
+    args = argParser.parse_args()
+
     init()
-    localizer=localization(rawSensor)
+    localizer=localization(rawSensor, args.env)
 
     try:
         spin(localizer)
