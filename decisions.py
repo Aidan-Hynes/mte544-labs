@@ -24,7 +24,7 @@ from controller import controller, trajectoryController
 
 class decision_maker(Node):
     
-    def __init__(self, publisher_msg, publishing_topic, qos_publisher, goalPoint, rate=10, motion_type=POINT_PLANNER):
+    def __init__(self, publisher_msg, publishing_topic, qos_publisher, goalPoint, rate=10, motion_type=POINT_PLANNER, environment):
 
         super().__init__("decision_maker")
 
@@ -50,7 +50,7 @@ class decision_maker(Node):
 
 
         # Instantiate the localization, use rawSensor for now  
-        self.localizer=localization(rawSensor)
+        self.localizer=localization(rawSensor, environment)
 
         # Instantiate the planner
         # NOTE: goalPoint is used only for the pointPlanner
@@ -62,6 +62,7 @@ class decision_maker(Node):
     def timerCallback(self):
         
         # TODO Part 3: Run the localization node
+        spin_once(self.localizer)
         ...    # Remember that this file is already running the decision_maker node.
 
         if self.localizer.getPose()  is  None:
@@ -99,12 +100,6 @@ def main(args=None):
     
     init()
 
-    # TODO Part 3: You migh need to change the QoS profile based on whether you're using the real robot or in simulation.
-    # Remember to define your QoS profile based on the information available in "ros2 topic info /odom --verbose" as explained in Tutorial 3
-    
-    odom_qos=QoSProfile(reliability=2, durability=2, history=1, depth=10)
-    
-
     # TODO Part 4: instantiate the decision_maker with the proper parameters for moving the robot
     if args.motion.lower() == "point":
         DM=decision_maker(...)
@@ -123,8 +118,9 @@ def main(args=None):
 
 if __name__=="__main__":
 
-    argParser=argparse.ArgumentParser(description="point or trajectory") 
+    argParser=argparse.ArgumentParser(description="point or trajectory, and environment") 
     argParser.add_argument("--motion", type=str, default="point")
+    argParser.add_argument("--env", type=str, default="sim", help="Environment to run in (sim or real)")
     args = argParser.parse_args()
 
     main(args)
