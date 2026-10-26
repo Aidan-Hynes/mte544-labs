@@ -4,7 +4,6 @@ import sys
 from utilities import Logger, euler_from_quaternion
 from rclpy.time import Time
 from rclpy.node import Node
-from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
 
 from rclpy.qos import QoSProfile
 from nav_msgs.msg import Odometry as odom
@@ -14,17 +13,9 @@ from rclpy import init, spin
 rawSensor = 0
 class localization(Node):
     
-    def __init__(self, localizationType=rawSensor, environment="sim"):
+    def __init__(self, odom_qos, localizationType=rawSensor):
 
         super().__init__("localizer")
-        
-        # Create the QoS profile dependant on the environment
-        if environment == 'sim':
-            odom_qos=QoSProfile(depth=10, reliability=ReliabilityPolicy.RELIABLE,
-                        history=HistoryPolicy.KEEP_LAST)
-        else:
-            odom_qos=QoSProfile(depth=10, reliability=ReliabilityPolicy.BEST_EFFORT,
-                        history=HistoryPolicy.KEEP_LAST)
         
         self.loc_logger=Logger("robot_pose.csv", ["x", "y", "theta", "stamp"])
         self.pose=None

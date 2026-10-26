@@ -10,7 +10,7 @@ from rclpy import init, spin, spin_once
 from rclpy.node import Node
 from geometry_msgs.msg import Twist
 
-from rclpy.qos import QoSProfile
+from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
 from nav_msgs.msg import Odometry as odom
 
 from localization import localization, rawSensor
@@ -24,12 +24,12 @@ from controller import controller, trajectoryController
 
 class decision_maker(Node):
     
-    def __init__(self, publisher_msg, publishing_topic, qos_publisher, goalPoint, rate=10, motion_type=POINT_PLANNER, environment):
+    def __init__(self, publisher_msg, publishing_topic, qos, goalPoint, rate=10, motion_type=POINT_PLANNER):
 
         super().__init__("decision_maker")
 
         #TODO Part 4: Create a publisher for the topic responsible for robot's motion
-        self.publisher=... 
+        self.publisher=self.create_publisher(publisher_msg, publishing_topic, qos, rate)
 
         publishing_period=1/rate
         
@@ -50,7 +50,7 @@ class decision_maker(Node):
 
 
         # Instantiate the localization, use rawSensor for now  
-        self.localizer=localization(rawSensor, environment)
+        self.localizer=localization(qos, rawSensor)
 
         # Instantiate the planner
         # NOTE: goalPoint is used only for the pointPlanner
@@ -104,6 +104,13 @@ import argparse
 def main(args=None):
     
     init()
+
+    if args.environment == 'sim':
+        qos_profile=QoSProfile(depth=10, reliability=ReliabilityPolicy.RELIABLE,
+                                history=HistoryPolicy.KEEP_LAST)
+    else:
+        qos_profile=QoSProfile(depth=10, reliability=ReliabilityPolicy.BEST_EFFORT,
+                                history=HistoryPolicy.KEEP_LAST)
 
     # TODO Part 4: instantiate the decision_maker with the proper parameters for moving the robot
     if args.motion.lower() == "point":
