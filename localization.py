@@ -59,3 +59,16 @@ class localization(Node):
 # Here put a guard that makes the node run, ONLY when run as a main thread!
 # This is to make sure this node functions right before using it in decision.py
     
+if __name__ == "__main__":
+    init()
+    localizer=localization(rawSensor)
+
+    try:
+        spin(localizer)
+    
+    except KeyboardInterrupt:
+        pass
+
+    finally:
+        localizer.loc_logger.save_log()
+        localizer.destroy_node()
