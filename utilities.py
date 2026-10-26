@@ -21,7 +21,7 @@ class Logger:
         with open(self.filename, 'a') as file:
             vals_str=""
 
-            # TODO Part 5: Write the values from the list to the file
+            # Part 5: Write the values from the list to the file
             vals_str = ", ".join([str(v) for v in values_list])
             
             vals_str+="\n"
