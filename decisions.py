@@ -31,29 +31,28 @@ class decision_maker(Node):
         self.publisher=self.create_publisher(publisher_msg, publishing_topic, qos)
 
         publishing_period=1/rate
+
+        self.motion_type = motion_type
+        self.tolerance = 0.08 # tighter tolerance for final destination
         
         # Instantiate the controller
         # Part 5: Tune your parameters here
     
         if motion_type == POINT_PLANNER:
             self.controller=controller(klp=0.2, klv=0.5, kap=0.8, kav=0.6, ctrl_type=ctrl_type)
-            self.planner=planner(POINT_PLANNER)    
-    
+            self.planner=planner(POINT_PLANNER)
+            self.goal = self.planner.plan(goalPoint)
     
         elif motion_type==TRAJECTORY_PLANNER:
             self.controller=trajectoryController(klp=0.2, klv=0.5, kap=0.8, kav=0.6, ctrl_type=ctrl_type)
             self.planner=planner(TRAJECTORY_PLANNER, traj_type=trajectory_type)
-
+            self.goal = self.planner.plan()
         else:
             print("Error! you don't have this planner", file=sys.stderr)
 
 
         # Instantiate the localization, use rawSensor for now  
         self.localizer=localization(qos, rawSensor)
-
-        # Instantiate the planner
-        # NOTE: goalPoint is used only for the pointPlanner
-        self.goal=self.planner.plan(goalPoint)
 
         self.create_timer(publishing_period, self.timerCallback)
 
@@ -72,26 +71,31 @@ class decision_maker(Node):
         # Part 3: Check if you reached the goal
         current_pose = self.localizer.getPose()
         x, y = current_pose[0], current_pose[1]
-        tolerance = 0.1 # hard code for now, ask what best would be
 
-        if type(self.goal) == list:
-            target = self.goal[-1]
-            reached_goal=((x - target[0]) ** 2 + (y - target[1]) ** 2) ** 0.5 < tolerance
-        else: 
-            target = self.goal
-            reached_goal= ((x - target[0]) ** 2 + (y - target[1]) ** 2) ** 0.5 < tolerance
+        # Determine the final stopping point to check for arrival
+        if self.motion_type == TRAJECTORY_PLANNER:
+            final_target = self.goal[-1]
+        else:
+            final_target = self.goal
         
 
-        if reached_goal:
+        dist_to_final = ((x - final_target[0]) ** 2 + (y - final_target[1]) ** 2) ** 0.5
+
+        # Check if destination is reached
+        if dist_to_final < self.tolerance:
             print("reached goal")
+            vel_msg.linear.x = 0.0
+            vel_msg.angular.z = 0.0
             self.publisher.publish(vel_msg)
-            
+
             self.controller.PID_angular.logger.save_log()
             self.controller.PID_linear.logger.save_log()
-            
-            # Part 3: exit the spin
+
+            if hasattr(self, 'timer') and self.timer is not None:
+                self.timer.cancel()
+
             raise SystemExit
-        
+
         velocity, yaw_rate = self.controller.vel_request(self.localizer.getPose(), self.goal, True)
 
         #TODO Part 4: Publish the velocity to move the robot
