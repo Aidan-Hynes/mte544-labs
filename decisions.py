@@ -44,7 +44,7 @@ class decision_maker(Node):
             self.goal = self.planner.plan(goalPoint)
     
         elif motion_type==TRAJECTORY_PLANNER:
-            self.controller=trajectoryController(klp=0.2, klv=0.5, kap=0.8, kav=0.6, ctrl_type=ctrl_type)
+            self.controller=trajectoryController(klp=0.1, klv=0.5, kap=1.2, kav=0.6, ctrl_type=ctrl_type)
             self.planner=planner(TRAJECTORY_PLANNER, traj_type=trajectory_type)
             self.goal = self.planner.plan()
         else:
@@ -97,6 +97,8 @@ class decision_maker(Node):
             raise SystemExit
 
         velocity, yaw_rate = self.controller.vel_request(self.localizer.getPose(), self.goal, True)
+
+        print(f"Dist to goal: {dist_to_final:.3f} m | Cmd Vel: {velocity:.3f}")
 
         #TODO Part 4: Publish the velocity to move the robot
         vel_msg.linear.x = float(velocity)
