@@ -16,34 +16,33 @@ from nav_msgs.msg import Odometry as odom
 from localization import localization, rawSensor
 
 from planner import TRAJECTORY_PLANNER, POINT_PLANNER, planner
-from controller import controller, trajectoryController
 
 # You may add any other imports you may need/want to use below
-# import ...
+from controller import controller, trajectoryController, P, PD, PI, PID
 
 
 class decision_maker(Node):
     
-    def __init__(self, publisher_msg, publishing_topic, qos, goalPoint, rate=10, motion_type=POINT_PLANNER):
+    def __init__(self, publisher_msg, publishing_topic, qos, goalPoint, rate=10, motion_type=POINT_PLANNER, trajectory_type="parabola", ctrl_type=P):
 
         super().__init__("decision_maker")
 
-        #TODO Part 4: Create a publisher for the topic responsible for robot's motion
+        # Part 4: Create a publisher for the topic responsible for robot's motion
         self.publisher=self.create_publisher(publisher_msg, publishing_topic, qos)
 
         publishing_period=1/rate
         
         # Instantiate the controller
-        # TODO Part 5: Tune your parameters here
+        # Part 5: Tune your parameters here
     
         if motion_type == POINT_PLANNER:
-            self.controller=controller(klp=0.2, klv=0.5, kap=0.8, kav=0.6)
+            self.controller=controller(klp=0.2, klv=0.5, kap=0.8, kav=0.6, ctrl_type=ctrl_type)
             self.planner=planner(POINT_PLANNER)    
     
     
         elif motion_type==TRAJECTORY_PLANNER:
-            self.controller=trajectoryController(klp=0.2, klv=0.5, kap=0.8, kav=0.6)
-            self.planner=planner(TRAJECTORY_PLANNER)
+            self.controller=trajectoryController(klp=0.2, klv=0.5, kap=0.8, kav=0.6, ctrl_type=ctrl_type)
+            self.planner=planner(TRAJECTORY_PLANNER, traj_type=trajectory_type)
 
         else:
             print("Error! you don't have this planner", file=sys.stderr)
@@ -107,6 +106,15 @@ def main(args=None):
     
     init()
 
+    controller_types = {
+    "P": P,
+    "PD": PD,
+    "PI": PI,
+    "PID": PID
+}
+
+    ctrl_type = controller_types[args.controller]
+
     if args.env == 'sim':
         qos_profile=QoSProfile(depth=10, reliability=ReliabilityPolicy.RELIABLE,
                                 history=HistoryPolicy.KEEP_LAST)
@@ -128,7 +136,9 @@ def main(args=None):
             publishing_topic=cmd_topic,
             qos=qos_profile,
             goalPoint=goal_point,
-            motion_type=POINT_PLANNER
+            motion_type=POINT_PLANNER,
+            trajectory_type= args.traj,
+            ctrl_type=ctrl_type
         )
     elif args.motion.lower() == "trajectory":
         DM = decision_maker(
@@ -136,7 +146,9 @@ def main(args=None):
             publishing_topic=cmd_topic,
             qos=qos_profile,
             goalPoint=None,
-            motion_type=TRAJECTORY_PLANNER
+            motion_type=TRAJECTORY_PLANNER,
+            trajectory_type = args.traj,
+            ctrl_type=ctrl_type
         )
     else:
         print("invalid motion type", file=sys.stderr)        
@@ -151,6 +163,8 @@ if __name__=="__main__":
 
     argParser=argparse.ArgumentParser(description="point or trajectory, and environment") 
     argParser.add_argument("--motion", type=str, default="point")
+    argParser.add_argument("--traj", type=str, default="parabola", choices=["parabola", "sigmoid"])
+    argParser.add_argument("--controller", type=str.upper, default="P", choices=["P", "PD", "PI", "PID"], help="Controller type: P, PD, PI, or PID")
     argParser.add_argument("--env", type=str, default="sim", help="Environment to run in (sim or real)")
     args = argParser.parse_args()
 

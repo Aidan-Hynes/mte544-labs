@@ -12,11 +12,11 @@ class controller:
     
     
     # Default gains of the controller for linear and angular motions
-    def __init__(self, klp=0.2, klv=0.2, kli=0.2, kap=0.2, kav=0.2, kai=0.2):
+    def __init__(self, klp=0.2, klv=0.2, kli=0.2, kap=0.2, kav=0.2, kai=0.2, ctrl_type=P):
         
         # TODO Part 5 and 6: Modify the below lines to test your PD, PI, and PID controller
-        self.PID_linear=PID_ctrl(P, klp, klv, kli, filename_="linear.csv")
-        self.PID_angular=PID_ctrl(P, kap, kav, kai, filename_="angular.csv")
+        self.PID_linear=PID_ctrl(ctrl_type, klp, klv, kli, filename_="linear.csv")
+        self.PID_angular=PID_ctrl(ctrl_type, kap, kav, kai, filename_="angular.csv")
 
     
     def vel_request(self, pose, goal, status):
@@ -28,7 +28,7 @@ class controller:
         linear_vel=self.PID_linear.update([e_lin, pose[3]], status)
         angular_vel=self.PID_angular.update([e_ang, pose[3]], status)
         
-        # TODO Part 4: Add saturation limits for the robot linear and angular velocity
+        # Part 4: Add saturation limits for the robot linear and angular velocity
 
         # for simulation
         v_max = 0.22
@@ -45,9 +45,9 @@ class controller:
 
 class trajectoryController(controller):
 
-    def __init__(self, klp=0.2, klv=0.2, kli=0.2, kap=0.2, kav=0.2, kai=0.2):
+    def __init__(self, klp=0.2, klv=0.2, kli=0.2, kap=0.2, kav=0.2, kai=0.2, ctrl_type=P):
         
-        super().__init__(klp, klv, kli, kap, kav, kai)
+        super().__init__(klp, klv, kli, kap, kav, kai, ctrl_type)
     
     def vel_request(self, pose, listGoals, status):
         
@@ -62,7 +62,7 @@ class trajectoryController(controller):
         linear_vel=self.PID_linear.update([e_lin, pose[3]], status)
         angular_vel=self.PID_angular.update([e_ang, pose[3]], status) 
 
-        # TODO Part 5: Add saturation limits for the robot linear and angular velocity
+        # Part 5: Add saturation limits for the robot linear and angular velocity
 
         # Saturation limits (TurtleBot3 Burger: 0.22 m/s, 2.84 rad/s; TurtleBot 4: 0.31 m/s, 1.90 rad/s)
         v_max = 0.22
