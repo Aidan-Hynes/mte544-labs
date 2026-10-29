@@ -30,8 +30,15 @@ class controller:
         
         # TODO Part 4: Add saturation limits for the robot linear and angular velocity
 
-        linear_vel = ... if linear_vel > 1.0 else linear_vel
-        angular_vel= ... if angular_vel > 1.0 else angular_vel
+        # for simulation TODO: update for real robot
+        v_max = 0.22
+        w_max = 2.84
+
+        v_max_robot=0.31
+        w_max_robot=1.9
+
+        linear_vel = v_max if linear_vel > v_max else (-v_max if linear_vel < -v_max else linear_vel)
+        angular_vel = w_max if angular_vel > w_max else (-w_max if angular_vel < -w_max else angular_vel)
         
         return linear_vel, angular_vel
     

@@ -5,7 +5,7 @@ from utilities import Logger, euler_from_quaternion
 from rclpy.time import Time
 from rclpy.node import Node
 
-from rclpy.qos import QoSProfile
+from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
 from nav_msgs.msg import Odometry as odom
 
 from rclpy import init, spin
@@ -40,9 +40,13 @@ class localization(Node):
         ]
 
         theta = euler_from_quaternion(quat)
+        stamp = pose_msg.header.stamp
 
-        # Log the data
-        self.loc_logger.log_values([x, y, theta, Time.from_msg(self.pose[3]).nanoseconds])
+        # update the pose
+        self.pose = [x, y, theta]
+
+        # log the data
+        self.loc_logger.log_values([x, y, theta, Time.from_msg(stamp).nanoseconds])
     
     def getPose(self):
         return self.pose
@@ -56,7 +60,21 @@ if __name__ == "__main__":
     args = argParser.parse_args()
 
     init()
-    localizer=localization(rawSensor, args.env)
+    # Create proper QoS profile based on environment
+    if args.env == 'sim':
+        qos_profile = QoSProfile(
+            depth=10, 
+            reliability=ReliabilityPolicy.RELIABLE,
+            history=HistoryPolicy.KEEP_LAST
+        )
+    else:
+        qos_profile = QoSProfile(
+            depth=10, 
+            reliability=ReliabilityPolicy.BEST_EFFORT,
+            history=HistoryPolicy.KEEP_LAST
+        )
+    
+    localizer=localization(qos_profile, rawSensor)
 
     try:
         spin(localizer)

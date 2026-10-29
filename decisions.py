@@ -29,7 +29,7 @@ class decision_maker(Node):
         super().__init__("decision_maker")
 
         #TODO Part 4: Create a publisher for the topic responsible for robot's motion
-        self.publisher=self.create_publisher(publisher_msg, publishing_topic, qos, rate)
+        self.publisher=self.create_publisher(publisher_msg, publishing_topic, qos)
 
         publishing_period=1/rate
         
@@ -96,7 +96,9 @@ class decision_maker(Node):
         velocity, yaw_rate = self.controller.vel_request(self.localizer.getPose(), self.goal, True)
 
         #TODO Part 4: Publish the velocity to move the robot
-        ... 
+        vel_msg.linear.x = float(velocity)
+        vel_msg.angular.z = float(yaw_rate)
+        self.publisher.publish(vel_msg)
 
 import argparse
 
@@ -105,7 +107,7 @@ def main(args=None):
     
     init()
 
-    if args.environment == 'sim':
+    if args.env == 'sim':
         qos_profile=QoSProfile(depth=10, reliability=ReliabilityPolicy.RELIABLE,
                                 history=HistoryPolicy.KEEP_LAST)
     else:
@@ -113,14 +115,31 @@ def main(args=None):
                                 history=HistoryPolicy.KEEP_LAST)
 
     # TODO Part 4: instantiate the decision_maker with the proper parameters for moving the robot
+
+    # set the cmd_vel topic name
+    cmd_topic = "/cmd_vel"
+
+    # define a target goal point
+    goal_point = [1.0, 1.0]
+
     if args.motion.lower() == "point":
-        DM=decision_maker(...)
+        DM = decision_maker(
+            publisher_msg=Twist,
+            publishing_topic=cmd_topic,
+            qos=qos_profile,
+            goalPoint=goal_point,
+            motion_type=POINT_PLANNER
+        )
     elif args.motion.lower() == "trajectory":
-        DM=decision_maker(...)
+        DM = decision_maker(
+            publisher_msg=Twist,
+            publishing_topic=cmd_topic,
+            qos=qos_profile,
+            goalPoint=None,
+            motion_type=TRAJECTORY_PLANNER
+        )
     else:
         print("invalid motion type", file=sys.stderr)        
-    
-    
     
     try:
         spin(DM)
