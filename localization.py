@@ -43,7 +43,7 @@ class localization(Node):
         stamp = pose_msg.header.stamp
 
         # update the pose
-        self.pose = [x, y, theta]
+        self.pose = [x, y, theta, stamp]
 
         # log the data
         self.loc_logger.log_values([x, y, theta, Time.from_msg(stamp).nanoseconds])
