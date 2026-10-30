@@ -12,7 +12,7 @@ class planner:
         self.traj_type = traj_type
 
     
-    def plan(self, goalPoint=[-1.0, -1.0]):
+    def plan(self, goalPoint=[1.0, 0]):
         
         if self.type==POINT_PLANNER:
             return self.point_planner(goalPoint)
