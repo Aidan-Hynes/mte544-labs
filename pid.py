@@ -9,19 +9,20 @@ PID=3 # proportional, integral, derivative
 
 class PID_ctrl:
     
-    def __init__(self, type_, kp=1.2,kv=0.8,ki=0.2, history_length=3, filename_="errors.csv"):
+    def __init__(self, controller_type, kp=1.2, kv=0.8, ki=0.2,
+                 history_length=3, filename="errors.csv"):
         
         # Data for the controller
         self.history_length=history_length
         self.history=[]
-        self.type=type_
+        self.type=controller_type
 
         # Controller gains
         self.kp=kp    # proportional gain
         self.kv=kv    # derivative gain
         self.ki=ki    # integral gain
         
-        self.logger=Logger(filename_)
+        self.logger=Logger(filename)
         # Remeber that you are writing to the file named filename_ or errors.csv the following:
             # error, error_dot, error_int and time stamp
 

@@ -12,11 +12,25 @@ class controller:
     
     
     # Default gains of the controller for linear and angular motions
-    def __init__(self, klp=0.2, klv=0.2, kli=0.2, kap=0.2, kav=0.2, kai=0.2, ctrl_type=P, env="sim"):
+    def __init__(self, linear_kp=0.2, linear_kv=0.2, linear_ki=0.2,
+                 angular_kp=0.2, angular_kv=0.2, angular_ki=0.2,
+                 ctrl_type=P, env="sim"):
         
         # TODO Part 5 and 6: Modify the below lines to test your PD, PI, and PID controller
-        self.PID_linear=PID_ctrl(ctrl_type, klp, klv, kli, filename_="linear.csv")
-        self.PID_angular=PID_ctrl(ctrl_type, kap, kav, kai, filename_="angular.csv")
+        self.PID_linear=PID_ctrl(
+            controller_type=ctrl_type,
+            kp=linear_kp,
+            kv=linear_kv,
+            ki=linear_ki,
+            filename="linear.csv"
+        )
+        self.PID_angular=PID_ctrl(
+            controller_type=ctrl_type,
+            kp=angular_kp,
+            kv=angular_kv,
+            ki=angular_ki,
+            filename="angular.csv"
+        )
 
         self.env = env
     
@@ -48,8 +62,19 @@ class controller:
 
 class trajectoryController(controller):
 
-    def __init__(self, klp=0.2, klv=0.2, kli=0.2, kap=0.2, kav=0.2, kai=0.2, ctrl_type=P, env="sim"):
-        super().__init__(klp, klv, kli, kap, kav, kai, ctrl_type, env)
+    def __init__(self, linear_kp=0.2, linear_kv=0.2, linear_ki=0.2,
+                 angular_kp=0.2, angular_kv=0.2, angular_ki=0.2,
+                 ctrl_type=P, env="sim"):
+        super().__init__(
+            linear_kp=linear_kp,
+            linear_kv=linear_kv,
+            linear_ki=linear_ki,
+            angular_kp=angular_kp,
+            angular_kv=angular_kv,
+            angular_ki=angular_ki,
+            ctrl_type=ctrl_type,
+            env=env
+        )
     
     def vel_request(self, pose, listGoals, status):
         

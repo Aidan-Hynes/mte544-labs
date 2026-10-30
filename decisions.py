@@ -15,7 +15,7 @@ from nav_msgs.msg import Odometry as odom
 
 from localization import localization, rawSensor
 
-from planner import TRAJECTORY_PLANNER, POINT_PLANNER, planner
+from planner import DEFAULT_GOAL_POINT, TRAJECTORY_PLANNER, POINT_PLANNER, planner
 
 # You may add any other imports you may need/want to use below
 from controller import controller, trajectoryController, P, PD, PI, PID
@@ -34,17 +34,36 @@ class decision_maker(Node):
 
         self.motion_type = motion_type
         self.tolerance = 0.01 # tighter tolerance for final destination
+        self._waiting_for_odom = True
         
         # Instantiate the controller
         # Part 5: Tune your parameters here
     
         if motion_type == POINT_PLANNER:
-            self.controller=controller(klp=0.8, kap=0.8, ctrl_type=ctrl_type, env=env)
+            self.controller=controller(
+                linear_kp=0.8,
+                linear_kv=0.2,
+                linear_ki=0.2,
+                angular_kp=0.8,
+                angular_kv=0.2,
+                angular_ki=0.2,
+                ctrl_type=ctrl_type,
+                env=env
+            )
             self.planner=planner(POINT_PLANNER)
             self.goal = self.planner.plan(goalPoint)
     
         elif motion_type==TRAJECTORY_PLANNER:
-            self.controller=trajectoryController(klp=0.1, klv=0.5, kap=1.2, kav=0.6, ctrl_type=ctrl_type, env=env)
+            self.controller=trajectoryController(
+                linear_kp=0.1,
+                linear_kv=0.5,
+                linear_ki=0.2,
+                angular_kp=1.2,
+                angular_kv=0.6,
+                angular_ki=0.2,
+                ctrl_type=ctrl_type,
+                env=env
+            )
             self.planner=planner(TRAJECTORY_PLANNER, traj_type=trajectory_type)
             self.goal = self.planner.plan()
         else:
@@ -63,8 +82,11 @@ class decision_maker(Node):
         spin_once(self.localizer)
 
         if self.localizer.getPose()  is  None:
-            print("waiting for odom msgs ....")
+            if self._waiting_for_odom:
+                print("Waiting for /odom messages...", flush=True)
             return
+
+        self._waiting_for_odom = False
 
         vel_msg=Twist()
         
@@ -124,7 +146,7 @@ def main(args=None):
     if args.env == 'sim':
         qos_profile=QoSProfile(depth=10, reliability=ReliabilityPolicy.RELIABLE,
                                 history=HistoryPolicy.KEEP_LAST)
-    elif args.env == 'real':
+    else:
         qos_profile=QoSProfile(depth=10, reliability=ReliabilityPolicy.BEST_EFFORT,
                                 history=HistoryPolicy.KEEP_LAST)
 
@@ -134,9 +156,9 @@ def main(args=None):
     cmd_topic = "/cmd_vel"
 
     # define a target goal point
-    goal_point = [1.0, 1.0]
+    goal_point = DEFAULT_GOAL_POINT
 
-    if args.motion.lower() == "point":
+    if args.motion == "point":
         DM = decision_maker(
             publisher_msg=Twist,
             publishing_topic=cmd_topic,
@@ -144,9 +166,10 @@ def main(args=None):
             goalPoint=goal_point,
             motion_type=POINT_PLANNER,
             trajectory_type= args.traj,
-            ctrl_type=ctrl_type
+            ctrl_type=ctrl_type,
+            env=args.env
         )
-    elif args.motion.lower() == "trajectory":
+    else:
         DM = decision_maker(
             publisher_msg=Twist,
             publishing_topic=cmd_topic,
@@ -154,11 +177,9 @@ def main(args=None):
             goalPoint=None,
             motion_type=TRAJECTORY_PLANNER,
             trajectory_type = args.traj,
-            ctrl_type=ctrl_type
+            ctrl_type=ctrl_type,
+            env=args.env
         )
-    else:
-        print("invalid motion type", file=sys.stderr)        
-    
     try:
         spin(DM)
     except SystemExit:
@@ -167,8 +188,8 @@ def main(args=None):
 
 if __name__=="__main__":
 
-    argParser=argparse.ArgumentParser(description="point or trajectory, and environment") 
-    argParser.add_argument("--motion", type=str, default="point")
+    argParser=argparse.ArgumentParser(description="Run the mobile robot controller")
+    argParser.add_argument("--motion", type=str.lower, default="point", choices=["point", "trajectory"])
     argParser.add_argument("--traj", type=str, default="parabola", choices=["parabola", "sigmoid"])
     argParser.add_argument("--controller", type=str.upper, default="P", choices=["P", "PD", "PI", "PID"], help="Controller type: P, PD, PI, or PID")
     argParser.add_argument("--env", type=str, default="sim", choices=["sim", "real"], help="Environment to run in (sim or real)")
