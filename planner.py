@@ -13,11 +13,7 @@ class planner:
         self.traj_type = traj_type
 
     
-<<<<<<< HEAD
-    def plan(self, goalPoint=[1.0, 0]):
-=======
     def plan(self, goalPoint=DEFAULT_GOAL_POINT):
->>>>>>> 8e96f1e (cleaned up formatting and argument parsing)
         
         if self.type==POINT_PLANNER:
             return self.point_planner(goalPoint)
