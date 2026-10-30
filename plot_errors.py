@@ -1,3 +1,5 @@
+import os
+
 import matplotlib.pyplot as plt
 from utilities import FileReader
 
@@ -5,7 +7,10 @@ from utilities import FileReader
 
 
 def plot_errors(filename):
-    
+
+    if not os.path.dirname(filename):
+        filename = os.path.join(os.path.dirname(__file__), "data", filename)
+
     headers, values=FileReader(filename).read_file()
     
     time_list=[]
