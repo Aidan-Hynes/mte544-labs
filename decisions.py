@@ -32,11 +32,11 @@ POINT_GAINS = {
 }
 
 TRAJECTORY_GAINS = {
-    "linear_kp": 0.4,
+    "linear_kp": 0.5,
     "linear_kv": 0.6,
     "linear_ki": 0.1,
     "angular_kp": 0.3,
-    "angular_kv": 0.7,
+    "angular_kv": 0.8,
     "angular_ki": 0.1,
 }
 
@@ -53,7 +53,7 @@ class decision_maker(Node):
         publishing_period=1/rate
 
         self.motion_type = motion_type
-        self.tolerance = 0.01 # tighter tolerance for final destination
+        self.tolerance = 0.02 # tighter tolerance for final destination
         self._waiting_for_odom = True
         
         # Instantiate the controller

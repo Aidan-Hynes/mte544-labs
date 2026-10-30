@@ -38,8 +38,8 @@ class planner:
             y_vals = x_vals ** 2
 
         elif self.traj_type == "sigmoid":
-            # Sigmoid: y = 2 / (1 + exp(-2*x)) - 1 for x in [0.0, 2.5]
-            x_vals = np.linspace(0.0, 2.5, num=100)
+            # Sigmoid: y = 2 / (1 + exp(-2*x)) - 1 for x in [0.0, 1.5]
+            x_vals = np.linspace(0.0, 1.5, num=100)
             y_vals = (2.0 / (1.0 + np.exp(-2.0 * x_vals))) - 1.0
 
         else:
