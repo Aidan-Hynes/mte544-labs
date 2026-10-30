@@ -23,7 +23,7 @@ from controller import controller, trajectoryController, P, PD, PI, PID
 
 class decision_maker(Node):
     
-    def __init__(self, publisher_msg, publishing_topic, qos, goalPoint, rate=10, motion_type=POINT_PLANNER, trajectory_type="parabola", ctrl_type=P):
+    def __init__(self, publisher_msg, publishing_topic, qos, goalPoint, rate=10, motion_type=POINT_PLANNER, trajectory_type="parabola", ctrl_type=P, env="sim"):
 
         super().__init__("decision_maker")
 
@@ -33,18 +33,18 @@ class decision_maker(Node):
         publishing_period=1/rate
 
         self.motion_type = motion_type
-        self.tolerance = 0.08 # tighter tolerance for final destination
+        self.tolerance = 0.01 # tighter tolerance for final destination
         
         # Instantiate the controller
         # Part 5: Tune your parameters here
     
         if motion_type == POINT_PLANNER:
-            self.controller=controller(klp=0.2, klv=0.5, kap=0.8, kav=0.6, ctrl_type=ctrl_type)
+            self.controller=controller(klp=0.2, klv=0.5, kap=0.8, kav=0.6, ctrl_type=ctrl_type, env=env)
             self.planner=planner(POINT_PLANNER)
             self.goal = self.planner.plan(goalPoint)
     
         elif motion_type==TRAJECTORY_PLANNER:
-            self.controller=trajectoryController(klp=0.1, klv=0.5, kap=1.2, kav=0.6, ctrl_type=ctrl_type)
+            self.controller=trajectoryController(klp=0.1, klv=0.5, kap=1.2, kav=0.6, ctrl_type=ctrl_type, env=env)
             self.planner=planner(TRAJECTORY_PLANNER, traj_type=trajectory_type)
             self.goal = self.planner.plan()
         else:
@@ -124,7 +124,7 @@ def main(args=None):
     if args.env == 'sim':
         qos_profile=QoSProfile(depth=10, reliability=ReliabilityPolicy.RELIABLE,
                                 history=HistoryPolicy.KEEP_LAST)
-    else:
+    elif args.env == 'real':
         qos_profile=QoSProfile(depth=10, reliability=ReliabilityPolicy.BEST_EFFORT,
                                 history=HistoryPolicy.KEEP_LAST)
 
@@ -171,7 +171,7 @@ if __name__=="__main__":
     argParser.add_argument("--motion", type=str, default="point")
     argParser.add_argument("--traj", type=str, default="parabola", choices=["parabola", "sigmoid"])
     argParser.add_argument("--controller", type=str.upper, default="P", choices=["P", "PD", "PI", "PID"], help="Controller type: P, PD, PI, or PID")
-    argParser.add_argument("--env", type=str, default="sim", help="Environment to run in (sim or real)")
+    argParser.add_argument("--env", type=str, default="sim", choices=["sim", "real"], help="Environment to run in (sim or real)")
     args = argParser.parse_args()
 
     main(args)
