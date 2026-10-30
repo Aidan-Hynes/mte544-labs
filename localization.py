@@ -13,11 +13,15 @@ from rclpy import init, spin
 rawSensor = 0
 class localization(Node):
     
-    def __init__(self, odom_qos, localizationType=rawSensor):
+    def __init__(self, odom_qos, localizationType=rawSensor, log_suffix=""):
 
         super().__init__("localizer")
         
-        self.loc_logger=Logger("robot_pose.csv", ["x", "y", "theta", "stamp"])
+        self.loc_logger=Logger(
+            "robot_pose.csv",
+            ["x", "y", "theta", "stamp"],
+            suffix=log_suffix
+        )
         self.pose=None
         
         # Part 3: subscribe to the position sensor topic (Odometry)

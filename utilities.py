@@ -5,11 +5,13 @@ M_PI=3.1415926535
 
 class Logger:
     
-    def __init__(self, filename, headers=["e", "e_dot", "e_int", "stamp"]):
+    def __init__(self, filename, headers=["e", "e_dot", "e_int", "stamp"], suffix=""):
 
         data_dir = os.path.join(os.path.dirname(__file__), "data")
         os.makedirs(data_dir, exist_ok=True)
-        self.filename = os.path.join(data_dir, os.path.basename(filename))
+        base_name, extension = os.path.splitext(os.path.basename(filename))
+        output_name = f"{base_name}_{suffix}{extension}" if suffix else os.path.basename(filename)
+        self.filename = os.path.join(data_dir, output_name)
 
         with open(self.filename, 'w') as file:
             

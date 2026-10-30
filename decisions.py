@@ -21,9 +21,29 @@ from planner import DEFAULT_GOAL_POINT, TRAJECTORY_PLANNER, POINT_PLANNER, plann
 from controller import controller, trajectoryController, P, PD, PI, PID
 
 
+# Tune controller gains here. Each axis has its own PID gains.
+POINT_GAINS = {
+    "linear_kp": 0.8,
+    "linear_kv": 0.2,
+    "linear_ki": 0.2,
+    "angular_kp": 0.8,
+    "angular_kv": 0.2,
+    "angular_ki": 0.2,
+}
+
+TRAJECTORY_GAINS = {
+    "linear_kp": 0.4,
+    "linear_kv": 0.6,
+    "linear_ki": 0.1,
+    "angular_kp": 0.3,
+    "angular_kv": 0.7,
+    "angular_ki": 0.1,
+}
+
+
 class decision_maker(Node):
     
-    def __init__(self, publisher_msg, publishing_topic, qos, goalPoint, rate=10, motion_type=POINT_PLANNER, trajectory_type="parabola", ctrl_type=P, env="sim"):
+    def __init__(self, publisher_msg, publishing_topic, qos, goalPoint, rate=10, motion_type=POINT_PLANNER, trajectory_type="parabola", ctrl_type=P, env="sim", log_suffix=""):
 
         super().__init__("decision_maker")
 
@@ -41,28 +61,20 @@ class decision_maker(Node):
     
         if motion_type == POINT_PLANNER:
             self.controller=controller(
-                linear_kp=0.8,
-                linear_kv=0.2,
-                linear_ki=0.2,
-                angular_kp=0.8,
-                angular_kv=0.2,
-                angular_ki=0.2,
+                **POINT_GAINS,
                 ctrl_type=ctrl_type,
-                env=env
+                env=env,
+                log_suffix=log_suffix
             )
             self.planner=planner(POINT_PLANNER)
             self.goal = self.planner.plan(goalPoint)
     
         elif motion_type==TRAJECTORY_PLANNER:
             self.controller=trajectoryController(
-                linear_kp=0.1,
-                linear_kv=0.5,
-                linear_ki=0.2,
-                angular_kp=1.2,
-                angular_kv=0.6,
-                angular_ki=0.2,
+                **TRAJECTORY_GAINS,
                 ctrl_type=ctrl_type,
-                env=env
+                env=env,
+                log_suffix=log_suffix
             )
             self.planner=planner(TRAJECTORY_PLANNER, traj_type=trajectory_type)
             self.goal = self.planner.plan()
@@ -71,7 +83,7 @@ class decision_maker(Node):
 
 
         # Instantiate the localization, use rawSensor for now  
-        self.localizer=localization(qos, rawSensor)
+        self.localizer=localization(qos, rawSensor, log_suffix=log_suffix)
 
         self.create_timer(publishing_period, self.timerCallback)
 
@@ -167,7 +179,8 @@ def main(args=None):
             motion_type=POINT_PLANNER,
             trajectory_type= args.traj,
             ctrl_type=ctrl_type,
-            env=args.env
+            env=args.env,
+            log_suffix=args.filename
         )
     else:
         DM = decision_maker(
@@ -178,7 +191,8 @@ def main(args=None):
             motion_type=TRAJECTORY_PLANNER,
             trajectory_type = args.traj,
             ctrl_type=ctrl_type,
-            env=args.env
+            env=args.env,
+            log_suffix=args.filename
         )
     try:
         spin(DM)
@@ -193,6 +207,7 @@ if __name__=="__main__":
     argParser.add_argument("--traj", type=str, default="parabola", choices=["parabola", "sigmoid"])
     argParser.add_argument("--controller", type=str.upper, default="P", choices=["P", "PD", "PI", "PID"], help="Controller type: P, PD, PI, or PID")
     argParser.add_argument("--env", type=str, default="sim", choices=["sim", "real"], help="Environment to run in (sim or real)")
+    argParser.add_argument("--filename", default="", help="Optional suffix for data log filenames")
     args = argParser.parse_args()
 
     main(args)
