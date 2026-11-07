@@ -16,7 +16,7 @@ class controller:
                  angular_kp=0.2, angular_kv=0.2, angular_ki=0.2,
                  ctrl_type=P, env="sim", log_suffix=""):
         
-        # TODO Part 5 and 6: Modify the below lines to test your PD, PI, and PID controller
+        # Part 5 and 6: Modify the below lines to test controller
         self.PID_linear=PID_ctrl(
             controller_type=ctrl_type,
             kp=linear_kp,
@@ -44,8 +44,6 @@ class controller:
 
         linear_vel=self.PID_linear.update([e_lin, pose[3]], status)
         angular_vel=self.PID_angular.update([e_ang, pose[3]], status)
-        
-        # Part 4: Add saturation limits for the robot linear and angular velocity
 
         # for simulation
         if self.env == "sim":
@@ -56,6 +54,7 @@ class controller:
             v_max=0.31
             w_max=1.9
 
+        # saturation limits
         linear_vel = v_max if linear_vel > v_max else (-v_max if linear_vel < -v_max else linear_vel)
         angular_vel = w_max if angular_vel > w_max else (-w_max if angular_vel < -w_max else angular_vel)
         
@@ -91,8 +90,6 @@ class trajectoryController(controller):
         
         linear_vel=self.PID_linear.update([e_lin, pose[3]], status)
         angular_vel=self.PID_angular.update([e_ang, pose[3]], status) 
-
-        # Part 5: Add saturation limits for the robot linear and angular velocity
 
         # Saturation limits (TurtleBot3 Burger: 0.22 m/s, 2.84 rad/s; TurtleBot 4: 0.31 m/s, 1.90 rad/s)
         if self.env == "sim":

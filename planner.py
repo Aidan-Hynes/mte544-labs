@@ -27,7 +27,7 @@ class planner:
         y = goalPoint[1]
         return x, y
 
-    # TODO Part 6: Implement the trajectories here
+    # Part 6: Implement the trajectories here
     def trajectory_planner(self):
         waypoints = []
 
@@ -39,6 +39,7 @@ class planner:
 
         elif self.traj_type == "sigmoid":
             # Sigmoid: y = 2 / (1 + exp(-2*x)) - 1 for x in [0.0, 1.5]
+            # NOTE THIS WAS UPDATED FOR THE IN LAB COMPONENT FOR SPACE TO GO TO 1.5m
             x_vals = np.linspace(0.0, 1.5, num=100)
             y_vals = (2.0 / (1.0 + np.exp(-2.0 * x_vals))) - 1.0
 

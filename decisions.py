@@ -57,7 +57,6 @@ class decision_maker(Node):
         self._waiting_for_odom = True
         
         # Instantiate the controller
-        # Part 5: Tune your parameters here
     
         if motion_type == POINT_PLANNER:
             self.controller=controller(
@@ -134,7 +133,7 @@ class decision_maker(Node):
 
         print(f"Dist to goal: {dist_to_final:.3f} m | Cmd Vel: {velocity:.3f}")
 
-        #TODO Part 4: Publish the velocity to move the robot
+        #Part 4: Publish the velocity to move the robot
         vel_msg.linear.x = float(velocity)
         vel_msg.angular.z = float(yaw_rate)
         self.publisher.publish(vel_msg)
@@ -162,14 +161,13 @@ def main(args=None):
         qos_profile=QoSProfile(depth=10, reliability=ReliabilityPolicy.BEST_EFFORT,
                                 history=HistoryPolicy.KEEP_LAST)
 
-    # TODO Part 4: instantiate the decision_maker with the proper parameters for moving the robot
-
     # set the cmd_vel topic name
     cmd_topic = "/cmd_vel"
 
     # define a target goal point
     goal_point = DEFAULT_GOAL_POINT
 
+    # instantiate the decision maker
     if args.motion == "point":
         DM = decision_maker(
             publisher_msg=Twist,
