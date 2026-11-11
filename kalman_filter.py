@@ -27,26 +27,26 @@ class kalman_filter:
         
         self.motion_model()
         
-        self.P= np.dot( np.dot(self.A, self.P), self.A.T) + self.Q
+        self.P = self.A @ self.P @ self.A.T + self.Q
 
     # Part 3: Calculate the Kalman gain and correct your estimates
     def update(self, z):
         # compute the Innovation (or Residual) Covariance: S = C*P*C' + R
-        S = np.dot(np.dot(self.C, self.P), self.C.T) + self.R
+        S = self.C @ self.P @ self.C.T + self.R
 
         # compute the Kalman Gain: K = P*C'*inv(S)
         # The Kalman gain dictates how much we trust the measurement vs our prediction
-        kalman_gain= np.dot(np.dot(self.P, self.C.T), np.linalg.inv(S))
+        kalman_gain = self.P @ self.C.T @ np.linalg.inv(S)
 
         # compute the Measurement Residual (Innovation): Y_bar = z - h(x)
         Y_bar = z - self.measurement_model()
 
         # update the state estimate x = x + K*Y_bar 
-        self.x= self.x + np.dot(kalman_gain, Y_bar)
+        self.x = self.x + kalman_gain @ Y_bar
 
         # update the error covariance: P = (I - K*C)*P
         I = np.eye(self.P.shape[0])
-        self.P = np.dot((I - np.dot(kalman_gain, self.C)), self.P)
+        self.P = (I - kalman_gain @ self.C) @ self.P
         
     
     # Part 3: Implement here the measurement model
