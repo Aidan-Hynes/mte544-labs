@@ -3,11 +3,9 @@
 import numpy as np
 
 
-
-# TODO Part 3: Comment the code explaining each part
 class kalman_filter:
     
-    # TODO Part 3: Initialize the covariances and the states    
+    # Part 3: Initialize the covariances and the states    
     def __init__(self, P,Q,R, x, dt):
         
         self.P=P
@@ -70,7 +68,7 @@ class kalman_filter:
             y + v * np.sin(th) * dt,
             th + w * dt,
             w,
-            v  + vdot*dt,
+            v + vdot*dt,
             vdot,
         ])
 
@@ -81,8 +79,8 @@ class kalman_filter:
         
         return np.array([
             #x, y,               th, w,             v, vdot
-            [1, 0,-v * np.sin(th) * dt, 0,np.cos(th) * dt,  0],
-            [0, 1,v * np.cos(th) * dt, 0,np.sin(th) * dt,  0],
+            [1, 0, -v * np.sin(th) * dt, 0,np.cos(th) * dt,  0],
+            [0, 1, v * np.cos(th) * dt, 0,np.sin(th) * dt,  0],
             [0, 0,                1, dt,           0,  0],
             [0, 0,                0, 1,            0,  0],
             [0, 0,                0, 0,            1,  dt],
@@ -90,17 +88,17 @@ class kalman_filter:
         ])
     
     
-    # TODO Part 3: Implement here the jacobian of the H matrix (measurements)    
+    # Part 3: Implement here the jacobian of the H matrix (measurements)    
     def jacobian_H(self):
         x, y, th, w, v, vdot=self.x
         return np.array([
             #x, y,th, w, v,vdot
-            [0,0,0  , 0, 1, 0], # v
-            [0,0,0  , 1, 0, 0], # w
-            [0,0,0  , 0, 0, 1], # ax
-            [0,0,0  , v, w, 0], # ay
+            [0, 0, 0, 0, 1, 0], # v
+            [0, 0, 0, 1, 0, 0], # w
+            [0, 0, 0, 0, 0, 1], # ax
+            [0, 0, 0, v, w, 0], # ay
         ])
         
-    # TODO Part 3: return the states here    
+    # Part 3: return the states here    
     def get_states(self):
         return self.x
