@@ -20,7 +20,7 @@ from controller import controller, trajectoryController
 class decision_maker(Node):
     
     
-    def __init__(self, publisher_msg, publishing_topic, qos_publisher, rate=10, motion_type=POINT_PLANNER):
+    def __init__(self, publisher_msg, publishing_topic, qos_publisher, rate=10, motion_type=POINT_PLANNER, q=0.5, r=0.5):
 
         super().__init__("decision_maker")
 
@@ -33,7 +33,7 @@ class decision_maker(Node):
 
 
         # Part 3: use the Kalman Filter
-        self.localizer=localization(kalmanFilter, publishing_period)
+        self.localizer=localization(kalmanFilter, publishing_period, q=q, r=r)
         
         if motion_type==POINT_PLANNER:
             self.controller=controller(klp=0.2, klv=0.5, kap=0.8, kav=0.6)      
@@ -112,11 +112,11 @@ def main(args=None):
     
     
     if args.motion == "point":
-        DM=decision_maker(Twist, "/cmd_vel", 10, motion_type=POINT_PLANNER)
+        DM=decision_maker(Twist, "/cmd_vel", 10, motion_type=POINT_PLANNER, q=args.q, r=args.r)
     elif args.motion == "trajectory":
-        DM=decision_maker(Twist, "/cmd_vel", 10, motion_type=TRAJECTORY_PLANNER)
+        DM=decision_maker(Twist, "/cmd_vel", 10, motion_type=TRAJECTORY_PLANNER, q=args.q, r=args.r)
     elif args.motion == "spiral":
-        DM=decision_maker(Twist, "/cmd_vel", 10, motion_type=SPIRAL_4TUNE)
+        DM=decision_maker(Twist, "/cmd_vel", 10, motion_type=SPIRAL_4TUNE, q=args.q, r=args.r)
     else:
         print("invalid motion type", file=sys.stderr)
         return
@@ -135,6 +135,8 @@ if __name__=="__main__":
     
     argParser=argparse.ArgumentParser(description="point or trajectory") 
     argParser.add_argument("--motion", type=str, default="spiral")
+    argParser.add_argument("--q", type=float, default=0.5)
+    argParser.add_argument("--r", type=float, default=0.5)
     args = argParser.parse_args()
 
     main(args)

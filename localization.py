@@ -25,7 +25,7 @@ odom_qos=QoSProfile(reliability=2, durability=2, history=1, depth=10)
 
 class localization(Node):
     
-    def __init__(self, type, dt, loggerName="robotPose.csv", loggerHeaders=["imu_ax", "imu_ay", "kf_ax", "kf_ay", "kf_vx", "kf_w", "odom_x", "odom_y", "kf_x", "kf_y", "stamp"]):
+    def __init__(self, type, dt, q=0.5, r=0.5, loggerName="robotPose.csv", loggerHeaders=["imu_ax", "imu_ay", "kf_ax", "kf_ay", "kf_vx", "kf_w", "odom_x", "odom_y", "kf_x", "kf_y", "stamp"]):
 
         super().__init__("localizer")
 
@@ -35,7 +35,7 @@ class localization(Node):
         if type==rawSensors:
             self.initRawSensors()
         elif type==kalmanFilter:
-            self.initKalmanfilter(dt)
+            self.initKalmanfilter(dt, q, r)
         else:
             print("We don't have this type for localization", sys.stderr)
             return  
@@ -43,7 +43,7 @@ class localization(Node):
     def initRawSensors(self):
         self.create_subscription(odom, "/odom", self.odom_callback, qos_profile=odom_qos)
         
-    def initKalmanfilter(self, dt):
+    def initKalmanfilter(self, dt, q, r):
         
         # Part 3: Set up the quantities for the EKF 
         
@@ -51,9 +51,9 @@ class localization(Node):
         x = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 
         # Process noise covariance Q
-        Q = np.eye(6) * 0.5
+        Q = np.eye(6) * q
 
-        R = np.eye(4) * 0.5
+        R = np.eye(4) * r
         
         P = np.eye(6) * 1.0 # initial covariance
         
