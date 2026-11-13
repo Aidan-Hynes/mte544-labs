@@ -20,8 +20,21 @@ def plot_errors(filename):
     fig, axes = plt.subplots(2,1, figsize=(14,6))
 
 
-    axes[0].plot([lin[len(headers) - 3] for lin in values], [lin[len(headers) - 2] for lin in values])
-    axes[0].set_title("state space")
+    odom_x = headers.index("odom_x")
+    odom_y = headers.index("odom_y")
+    kf_x = headers.index("kf_x")
+    kf_y = headers.index("kf_y")
+
+    axes[0].plot([row[odom_x] for row in values],
+                 [row[odom_y] for row in values],
+                 color="blue", label="Odometry")
+    axes[0].plot([row[kf_x] for row in values],
+                 [row[kf_y] for row in values],
+                 color="orange", label="Kalman filter")
+    axes[0].set_title("Odometry and Kalman filter paths")
+    axes[0].set_xlabel("x (m)")
+    axes[0].set_ylabel("y (m)")
+    axes[0].legend()
     axes[0].grid()
 
     
