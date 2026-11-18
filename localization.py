@@ -50,63 +50,74 @@ class localization(Node):
         # Initial State: [x, y, theta, w, v, vdot]
         x = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 
-        # Process noise covariance Q
+        # process noise covariance matrix. Represents uncertainty in the 
+        # kinematic motion model. Higher Q = trust sensors more
         Q = np.eye(6) * q
 
+        # measurement noise covariance matrix. Represents sensor noise from the 
+        # odometry and imu. Higher R = trust model more
         R = np.eye(4) * r
-        
+
+        # state error covariance matrix. Tracks current uncertainty in our state
+        # estimate and how errors between states are relatated
         P = np.eye(6) * 1.0 # initial covariance
-        
+
+        # instantiate the EKF with the initial state, covariance and loop period dt
         self.kf=kalman_filter(P,Q,R, x, dt)
         
-        # Part 3: Use the odometry and IMU data for the EKF
+        # Subscribe to wheel odometry (/odom) and imu (/imu) using message_filters
         self.odom_sub=message_filters.Subscriber(self, odom, "/odom", qos_profile=odom_qos)
         self.imu_sub=message_filters.Subscriber(self, Imu, "/imu", qos_profile=odom_qos)
-        
+
+        # Synchronize /odom and /imu messages that arrive within 0.1s (slop) of each other
+        # and pass each matched pair to fusion_callback
         time_syncher=message_filters.ApproximateTimeSynchronizer([self.odom_sub, self.imu_sub], queue_size=10, slop=0.1)
         time_syncher.registerCallback(self.fusion_callback)
-    
+
+    # this callback is triggered whenever the syncrhonized /odom and /imu messages arrive
+    # Builds the measurement vector z, runs one EKF predict-update cycle,
+    # updates the robot's estimated pose, and logs raw vs. filtered values.
     def fusion_callback(self, odom_msg: odom, imu_msg: Imu):
         
-        # Part 3: Use the EKF to perform state estimation
-        # Take the measurements
-        # your measurements are the linear velocity and angular velocity from odom msg
-        # and linear acceleration in x and y from the imu msg
-        # the kalman filter should do a proper integration to provide x,y and filter ax,ay
+        # velocities  from odom
         v_meas = odom_msg.twist.twist.linear.x
         w_meas = odom_msg.twist.twist.angular.z
+
+        # extract accelerations from imu
         ax_meas = imu_msg.linear_acceleration.x
         ay_meas = imu_msg.linear_acceleration.y
-        
+
+        # get the 4x1 measurement vector z = [v, w, ax, ay]^T
         z = np.array([v_meas, w_meas, ax_meas, ay_meas])
         
         # Implement the two steps for estimation
-        self.kf.predict()
-        self.kf.update(z)
+        self.kf.predict() # propogate state and covariances using motion model
+        self.kf.update(z) # correct state and covariances using sensor vector
         
-        # Get the estimate
+        # Get the updated state estimate
         xhat=self.kf.get_states()
 
         # Update the pose estimate to be returned by getPose
+        # [x, y, theta, stamp]
         self.pose=np.array([xhat[0], xhat[1], xhat[2], odom_msg.header.stamp])
 
-        # Part 4: log your data
+        # Convert ROS timestamp to floating-point seconds for CSV plotting
         stamp_sec = odom_msg.header.stamp.sec + (odom_msg.header.stamp.nanosec * 1e-9)
         
         # Calculate predicted ay from the EKF states (ay = v * w)
         kf_ay = xhat[4] * xhat[3]
         
         self.loc_logger.log_values([
-            ax_meas,      # imu_ax
-            ay_meas,      # imu_ay
-            xhat[5],      # kf_ax (vdot)
-            kf_ay,        # kf_ay (v*w)
-            xhat[4],      # kf_vx (v)
-            xhat[3],      # kf_w (w)
-            odom_msg.pose.pose.position.x,
-            odom_msg.pose.pose.position.y,
-            xhat[0],      # kf_x (x)
-            xhat[1],      # kf_y (y)
+            ax_meas,      # imu_ax (measured)
+            ay_meas,      # imu_ay (measured)
+            xhat[5],      # kf_ax (vdot) (estimated)
+            kf_ay,        # kf_ay (v*w) (estimated)
+            xhat[4],      # kf_vx (v) (estimated)
+            xhat[3],      # kf_w (w) (estimated)
+            odom_msg.pose.pose.position.x, # (measured)
+            odom_msg.pose.pose.position.y,# (measured)
+            xhat[0],      # kf_x (x) (estimated)
+            xhat[1],      # kf_y (y) (estimated)
             stamp_sec     # stamp
         ])
       

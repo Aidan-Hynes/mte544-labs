@@ -32,7 +32,7 @@ class decision_maker(Node):
         self.reachThreshold=0.01
 
 
-        # Part 3: use the Kalman Filter
+        # Part 3: use the Kalman Filter with passed arguments for q and r
         self.localizer=localization(kalmanFilter, publishing_period, q=q, r=r)
         
         if motion_type==POINT_PLANNER:
@@ -135,6 +135,8 @@ if __name__=="__main__":
     
     argParser=argparse.ArgumentParser(description="point or trajectory") 
     argParser.add_argument("--motion", type=str, default="spiral")
+
+    # add arguments for q and r 
     argParser.add_argument("--q", type=float, default=0.5)
     argParser.add_argument("--r", type=float, default=0.5)
     args = argParser.parse_args()
