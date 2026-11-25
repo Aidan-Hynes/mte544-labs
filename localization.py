@@ -24,7 +24,7 @@ import message_filters
 
 rawSensors=0; kalmanFilter=1
 
-odom_qos=QoSProfile(reliability=2, durability=2, history=1, depth=10)
+odom_qos=QoSProfile(reliability=1, durability=2, history=1, depth=10)
 
 
 class localization(Node):
