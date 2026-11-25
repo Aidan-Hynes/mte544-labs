@@ -46,7 +46,7 @@ class decision_maker(Node):
         self.reachThreshold=0.15 # 0.15 meters, ADJUST IF NEEDED
 
         # TODO PART 5 your localization type
-        self.localizer=localization(kalmanFilter)
+        self.localizer=localization(rawSensors)
 
 
         
@@ -85,6 +85,7 @@ class decision_maker(Node):
         
         self.goal=self.planner.plan([self.localizer.getPose()[0], self.localizer.getPose()[1]],
                                      [msg.pose.position.x, msg.pose.position.y])
+        print(f"Start: {self.localizer.getPose()[:2]} | Goal: {[msg.pose.position.x, msg.pose.position.y]} | Waypoints: {len(self.goal)}")
 
     
     def timerCallback(self):
