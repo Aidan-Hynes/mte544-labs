@@ -104,7 +104,7 @@ def search(maze, start, end, heuristic="euclidian", cost_weight = 10.0):
     start_node.h = compute_heuristic(start_node.position, end, heuristic)     # heuristic estimated cost to end Node
     start_node.f = start_node.g + start_node.h
 
-    end_node = Node(None, start)
+    end_node = Node(None, end)
     end_node.g = float('inf') # set a very large value
     end_node.h = 0 # heuristic estimated cost to end Node
     end_node.f = end_node.g + end_node.h
