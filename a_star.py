@@ -62,26 +62,6 @@ def compute_heuristic(position, end_position, heuristic="euclidean"):
     else:
         raise ValueError(f"Unknown heuristic '{heuristic}'. Choose 'euclidean' or 'manhattan'.")
 
-
-def return_path(current_node, maze):
-    path = []
-    no_rows, no_columns = np.shape(maze)
-    # here we create the initialized result maze with -1 in every position
-    result = [[-1 for i in range(no_columns)] for j in range(no_rows)]
-    current = current_node
-    while current is not None:
-        path.append(current.position)
-        current = current.parent
-    # Return reversed path as we need to show from start to end path
-    path = path[::-1]
-    start_value = 0
-    # we update the path of start to end found by A-star search with every step incremented by 1
-    for i in range(len(path)):
-        result[path[i][0]][path[i][1]] = start_value
-        start_value += 1
-
-    return path
-
 def search(maze, start, end, heuristic="euclidian", cost_weight = 10.0):
 
     print("searching ....")
@@ -100,12 +80,12 @@ def search(maze, start, end, heuristic="euclidian", cost_weight = 10.0):
     # TODO PART 4 Create start and end node with initized values for g, h and f
     # Use None as parent if not defined
     start_node = Node(None, start)
-    start_node.g = 0 # cost from start Node
+    start_node.g = 0 # cost from start Node, initial path cost
     start_node.h = compute_heuristic(start_node.position, end, heuristic)     # heuristic estimated cost to end Node
     start_node.f = start_node.g + start_node.h
 
     end_node = Node(None, end)
-    end_node.g = float('inf') # set a very large value
+    end_node.g = float('inf') # set a very large value, so any path has lower cost
     end_node.h = 0 # heuristic estimated cost to end Node
     end_node.f = end_node.g + end_node.h
 
@@ -222,11 +202,18 @@ def search(maze, start, end, heuristic="euclidian", cost_weight = 10.0):
 
             # TODO PART 4 Create the f, g, and h values
             # Step distance (1.0 for cardinal, sqrt(2) for diagonal) + likelihood field penalty
+            # 1.0 for left/right/up/down moves and sqrt(2) for angled moves.
             step_cost = sqrt((child.position[0] - current_node.position[0]) ** 2 +
                              (child.position[1] - current_node.position[1]) ** 2)
+
+            ## we have a cost weight that will encourage the robot to go down 
+            # the center of the hallway (will weight nodes close to walls higher)
             terrain_cost = cost_weight * maze[child.position[0], child.position[1]]
 
+            # from start
             child.g = current_node.g + step_cost + terrain_cost
+
+            # to end
             child.h = compute_heuristic(child.position, end_node.position, heuristic)
             child.f = child.g + child.h
 
