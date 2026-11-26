@@ -62,7 +62,7 @@ def compute_heuristic(position, end_position, heuristic="euclidean"):
     else:
         raise ValueError(f"Unknown heuristic '{heuristic}'. Choose 'euclidean' or 'manhattan'.")
 
-def search(maze, start, end, heuristic="euclidian", cost_weight = 10.0):
+def search(maze, start, end, heuristic="euclidian"):
 
     print("searching ....")
 
