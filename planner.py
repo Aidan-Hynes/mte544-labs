@@ -32,6 +32,10 @@ class planner:
         # TODO PART 5 Create the cost-map, the laser_sig is 
         # the standard deviation for the gausiian for which
         # the mean is located on the occupant grid. 
+
+        # this is the buffer distance around walls
+        # d_buffer = 0.668 laser_sig
+        # d_buffer = 0.35 m
         self.m_utilites=mapManipulator(self.mapName, laser_sig=0.35)
             
         self.costMap=self.m_utilites.make_likelihood_field()
@@ -50,15 +54,20 @@ class planner:
         
         # TODO PART 5 convert the cell pixels into the cartesian coordinates
         cell_path = search(self.costMap, startPose, endPose, heuristic=self.heuristic)
+
+        # Translate every (row, col) pixel index back into continuous [x, y] world
+        # coordinates in meters:
+        # 1. cell_2_position(cell) scales by map resolution, un-flips the vertical
+        #    image axis, and adds the map origin from room.yaml.
+        # 2. Inner list(...) converts each returned (x, y) tuple into an [x, y] list.
+        # 3. Outer list(map(...)) evaluates the lazy map iterator into a concrete
+        #    list of waypoints [[x0, y0], [x1, y1], ...] so decisions.py can index it.
         Path = list(map(lambda cell: list(self.m_utilites.cell_2_position(cell)), cell_path))
 
 
 
         # TODO PART 5 return the path as list of [x,y]
         return Path
-
-
-
 
 if __name__=="__main__":
 
