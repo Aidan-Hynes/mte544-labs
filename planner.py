@@ -1,51 +1,71 @@
-import numpy as np
 
-# Type of planner
+from mapUtilities import *
+from a_star import *
+
 POINT_PLANNER=0; TRAJECTORY_PLANNER=1
 
-
-
 class planner:
-    def __init__(self, type_, traj_type="parabola"):
+    def __init__(self, type_, mapName="room", heuristic="euclidean"):
 
         self.type=type_
-        self.traj_type = traj_type
+        self.mapName=mapName
+        self.heuristic=heuristic
 
     
-    def plan(self, goalPoint=[-1.0, -1.0]):
+    def plan(self, startPose, endPose):
         
         if self.type==POINT_PLANNER:
-            return self.point_planner(goalPoint)
+            return self.point_planner(endPose)
         
         elif self.type==TRAJECTORY_PLANNER:
-            return self.trajectory_planner()
+            self.costMap=None
+            self.initTrajectoryPlanner()
+            return self.trajectory_planner(startPose, endPose)
 
 
-    def point_planner(self, goalPoint):
-        x = goalPoint[0]
-        y = goalPoint[1]
-        return x, y
+    def point_planner(self, endPose):
+        return endPose
 
-    # TODO Part 6: Implement the trajectories here
-    def trajectory_planner(self):
-        waypoints = []
+    def initTrajectoryPlanner(self):
 
-        if self.traj_type == "parabola":
-            # Parabola: y = x^2 for x in [0.0, 1.5]
-            # 50 to 100 points provides smooth resolution
-            x_vals = np.linspace(0.0, 1.5, num=75)
-            y_vals = x_vals ** 2
 
-        elif self.traj_type == "sigmoid":
-            # Sigmoid: y = 2 / (1 + exp(-2*x)) - 1 for x in [0.0, 2.5]
-            x_vals = np.linspace(0.0, 2.5, num=100)
-            y_vals = (2.0 / (1.0 + np.exp(-2.0 * x_vals))) - 1.0
+        # TODO PART 5 Create the cost-map, the laser_sig is 
+        # the standard deviation for the gausiian for which
+        # the mean is located on the occupant grid. 
+        self.m_utilites=mapManipulator(self.mapName, laser_sig=0.35)
+            
+        self.costMap=self.m_utilites.make_likelihood_field()
+        
 
-        else:
-            raise ValueError(f"Unknown trajectory type: {self.traj_type}")
+    def trajectory_planner(self, startPoseCart, endPoseCart):
 
-        for x, y in zip(x_vals, y_vals):
-            waypoints.append([float(x), float(y)])
 
-        return waypoints
+        # This is to convert the cartesian coordinates into the 
+        # the pixel coordinates of the map image, remmember,
+        # the cost-map is in pixels. You can by the way, convert the pixels
+        # to the cartesian coordinates and work by that index, the a_star finds
+        # the path regardless. 
+        startPose=self.m_utilites.position_2_cell(startPoseCart)
+        endPose=self.m_utilites.position_2_cell(endPoseCart)
+        
+        # TODO PART 5 convert the cell pixels into the cartesian coordinates
+        cell_path = search(self.costMap, startPose, endPose, heuristic=self.heuristic)
+        Path = list(map(lambda cell: list(self.m_utilites.cell_2_position(cell)), cell_path))
 
+
+
+        # TODO PART 5 return the path as list of [x,y]
+        return Path
+
+
+
+
+if __name__=="__main__":
+
+    m_utilites=mapManipulator()
+    
+    map_likelihood=m_utilites.make_likelihood_field()
+
+    # you can use this part of the code to test your 
+    # search algorithm regardless of the ros2 hassles
+    

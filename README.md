@@ -1,21 +1,25 @@
-# LAB 2 - Closed loop control of mobile robots
+# LAB 4 - Path planning and navigation
 
 ## Introduction
 
-Welcome to LAB 2 of the mobile robotics course! Here, you start shaping the overall structure of your mobile robot stack. Please check again the architecture provided in the README.md in the main branch and leave that open on your web browser. 
+Welcome to LAB 4 of the mobile robotics course! 
+In this lab, participants will gain experience with implementing a path planner and drive the robot using the obtained plan.
+By the end of this lab, participants will be able to:
+- Use a map to create a graph for graph-based path planner;
+- Generate a plan with the path planner and navigate the robot through the path to specified goals.
 
-In this lab, Participants will gain hands-on experience with mobile robots and acquire knowledge about their basic functionalities. By the end of this lab, participants will be able to:
-- Use the position data in a controller;
-- Control a mobile robot using a tunable PID controller.
-- Implement pure pursuit controller
+*Part 1* and *Part 2* are the same as in the previous labs they are here just for your convenience.
 
 
 #### The summary of what you should learn is as following:
+You will learn how to:
+- Create a cost map from a pre-aquired map;
+- Generate an optimal path using the A* algorithm;
+- Execute a path on a mobile robot.
 
-1. You will learn how to properly read and log position sensors using ros 2.
-2. You will write a PID controller class that can properly calculate derivate, and integral of your position sensor.
-3. You use the PID controller to perform two trajectories with the mobile robot while logging the error. Then, a report should be prepared comparing the P and PID controller in agility, accuracy, and overshoot.
+**NOTE** this Lab builds on top of Lab 2 and Lab 3. A complete solution to Lab 2 and Lab 3 is provided within this lab so that even if you did not conclude Lab 2 and Lab 3's implementation, you can still work on Lab 4 without penalties. You are welcome to replace some of the code with your own development from Lab 2 and Lab 3.
 
+Check ```rubrics.md``` for the grading scheme of this lab.
 
 ### NOTES for pre-lab activities
 Given the limited time in the lab, it is highly recommended to go through this manual and start (or complete) your implementation before the lab date, by working on your personal setup (VMWare, remote desktop, lent laptop), and using simulation for testing when needed to verify that your codes are working before coming into the lab. For simulation, refer to `tbt3Simulation.md` in the `main` branch.
@@ -25,14 +29,14 @@ During the 3 hours in the lab, you want to utilize this time to test your code, 
 While in-lab, you are required to use the Desktop PCs and **NOT** your personal setup (VMWare, remote desktop, lent laptop). So, make sure that you have your modified files, either online or on a USB, with you to try it out in-lab. 
 
 ### Pre-lab deliverable
-A first version of the completed code is to be submitted **24 hours before the group's lab section** (e.g. groups on the Wednesday section must submit by Tuesday at 3:30 PM), along with a list of doubts/questions to be solved during the in-person lab section (optional, if needed). The in-person lab is not meant for implementation but for testing and getting help from the TAs. 
+A first version of the completed code is to be submitted **24 hours before the group's lab section** (e.g. groups on the Wednesday section must submit by Tuesday at 3 PM), along with a list of doubts/questions to be solved during the in-person lab section (optional, if needed). The code does not have to be perfect but should be the best attempt and commented. The in-person lab is intended primarily for **testing, troubleshooting, and receiving TA support**, rather than implementing the code from scratch. 
 
-Failure to submit will result in a penalty of 5 marks on the lab report. The code does not have to be fully correct, but it should be (at least almost) complete and meaningful with appropriate comments.
+The following penalties apply:
 
-### Gain tuning
-In this lab, you will be tuning PID gains for the controller. Remember that gains tuned for the robot in simulation may not work for the real robot, so you do not need to achieve perfect tracking in simulation, just use it to check the working status of your code and whether the outputs are reasonable with just a few tuning.
+- **5 marks** for failing to submit the preliminary code by the deadline.
+- **10 additional marks** for failing to demonstrate and explain a complete working simulation, including **all in-lab components**, within the first 20 minutes of the scheduled lab session.
 
-In the lab, on the physical robot, tune to achieve reasonable results, and to obtain sufficient plots to demonstrate your tuning process (see sections below and what is needed to report in Conclusion).
+Students are encouraged to post on Piazza and reach out to the TAs for support ahead (at least 48-72h ahead is recommended) of their scheduled lab session to successfully complete the pre-lab deliverables.
 
 ## Part 1 - connecting to the robot (no marks)
 Open the [connectToUWtb4s.md](https://github.com/aalghooneh/MTE544_student/blob/main/connectToUWtb4s.md) markdown file in the main branch, and follow along. Read and follow each step carefully.
@@ -70,101 +74,94 @@ ros2 action send_goal /dock irobot_create_msgs/action/Dock {}
 - Source the .bashrc file: source ~/robohub/turtlebot4/configs/.bashrc
 - Declare ros2 domain: export ROS_DOMAIN_ID=X (X being the number of your robot)
 
-## Odometry reset
-For this lab, you may want to reset the odometry so that when you start your path, the odometry starts from the (0, 0, 0) state.
-Use this command to reset the odometry on the physical TurtleBot4 (in simulation, by simply restarting the simulation, you can reset the odometry):
+## Part 3 - Map acquisition (5 marks)
+In the prelab, you can use the turtlebot house environment to acquire the map and use this for the remaining of the testing. During the pre-lab checks, we will check whether your code is able to complete a path in the map you acquired.
+
+In the lab, check the [Excel sheet](https://uofwaterloo-my.sharepoint.com/:x:/g/personal/y526hu_uwaterloo_ca/IQASPpxw2ujxRqVBTjfJIKwjASSwinTYxhClsL0GH1VvACo?e=GCf7sq) to see the time slots reserved for your group for mapping and then testing. Two groups will work at the same time due to time limitations. Choose one of the two entrances so that the two robots are each at a different one. Bring the robot to the dock at the entrance chosen, and then start your mapping/testing.
+
+You do not have to wait until your slot starts if the earlier slots have finished earlier, just start as soon as the previous groups are done.
+
+**Please try to finish within your allocated time.**
+
+**NOTE: Do not change the positioning of the robots, always put your robot exactly as indicated byt the tape on the floor. This is important to be able to use your map later on.**
+
+Undock the robot, put the robot in the entrance marked for you exactly as marked by the tape, and reset the odometry, and then acquire the map as you did in LAB-1 and save it as room for use in the planning.
 
 ```
-ros2 service call /reset_pose irobot_create_msgs/srv/ResetPose
+# terminal 1: reset the odometry pose
+ros2 service call /reset_pose irobot_create_msgs/srv/ResetPose {}
+# terminal 2: run the SLAM
+ros2 launch turtlebot4_navigation slam.launch.py
+# terminal 3: view the results in RViz
+ros2 launch turtlebot4_viz view_robot.launch.py
+# terminal 4: move around the robot
+ros2 run teleop_twist_keyboard teleop_twist_keyboard
+# terminal 5: save the map
+ros2 run nav2_map_server map_saver_cli -f room
+``` 
 
-```
+**Note: if you face "Failed to spin map subscription" error, just rerun the `ros2 run nav2_map_server map_saver_cli -f room`**.
 
-## Part 3 - Read the position sensor, and log data (15 marks)
+When the map is acquired, make sure you **don't pick up the robot** so you wouldn't alter the odometry. If by any change you did, put the robot back on the dock, then undock and reset the odometry. This is to avoid for you to map the enviornment again.
 
-In this lab, you will implement a closed-loop controller to drive the robot by completing different parts of the code: the controller, the planner, and the localization. You can refer to the architecture to see how they are connected together.
+**Show the map to a TA to score the marks associated to this part.**
 
-- The controller is implemented using different control laws. You will start with a proportional controller (P) and then extend to proportional, derivative, integral (PID).
-- The planner generates the desired path/destination for the robot to follow, this can be as simple as a point planner, or a trajectory. At this stage, you will only implement predefined points/trajectories assuming the environment is perfect, we will see in LAB-4 how to implement optimal paths considering the environment (e.g. obstacles, walls).
-- The localization tells you where the robot is so that you can move the robot along the desired paths and read the data to feed back to your controller. At this stage, you will simply use the odometry to determine the position of the robot. In LAB-3 we will see how you can improve localization with sensor information (state estimation).
+## Part 4 - Complete the A* algorithm (25 marks)
+A mostly-completed A* algorithm is provided in ```a_star.py```.
 
-To start with, you need to read the position sensor and log the data so it can be used in the controller.
+For this part:
+- Follow the comments to complete the code in ```a_star.py``` to plan the path using the A* algorithm. 
+- Implement two different heuristics: Manhattan distance and Euclidean distance. A policy for switching between these two heuristics is not implemented, you are free to implement this the way you prefer (hard coded or with switching parameter or any other way).
 
-Follow the comments in ```utilities.py```, ```localization.py``` and ```decisions.py```.
+## Part 5 - Complete the code for testing the path (25 marks)
+To utilize the planner, it is necessary to create a cost map and define a goal pose. Differently from previous planners you have used, in this case the searching algorithm will create a list of poses that the robot has to follow (a path). So some adaptations to the code are necessary.
 
-## Part 4 - Write a P controller (20 marks)
-Start with a simple case and write a P controller only. Remember the control law of a P-controller, you need the proportional gain and the error of the system you are regulating, in this case, they are the linear and angular movement of the robot.
-To implement the controller, you will need to:
-- Compute both the linear and angular errors; follow the comments in ```utilities.py```;
-- Use the error to implement the control law of the P-controller; follow the comments in ```pid.py```;
-- Log your errors to evaluate the performance of your controller and to tune the gains; follow the comments in ```pid.py```;
-- Add saturation limits for the robot's linear and angular velocity; follow the comments in ```controller.py```;
+For this part:
+- Complete the code in ```planner.py``` to create the cost map using the ```mapManipulator``` from ```mapUtilities.py```;
+- Complete the code in ```planner.py``` to create a trajectory that is a list of goal poses returned by the searching algorithm which correspond to the path to follow;
+- Complete the code in ```decisions.py``` to adapt the code for the path planner.
+- **Optional** - In ```decisions.py``` use the PID gains from your Lab2, if you could not finish Lab2 or could not obtain good values, ask a TA. Complete the code in ```localization.py``` with the Q, R, and P matrices you obtained in Lab3. If you could not obtain good values or you could not obtain any values, you can use ```rawSensors``` instead of ```kalmanFilter``` for the localizer.
 
-  For real robot: Check out maximum linear and angular velocity from [Turtlebot 4 Specifications](https://turtlebot.github.io/turtlebot4-user-manual/overview/features.html#hardware-specifications).
+## Part 6 - Test your path planner (20 marks)
+To test the path planner:
+- Choose at least two different goal poses (can be consecutive goal points during the same execution) on your map that are significantly far from each other and perform path planning and navigation for each ot these two goals.
+- Perform the planning for each of these two goal poses with the two heuristics implemented in Part 4 (Manhattan and Euclidean).
 
-  For simulation: Check out maximum linear and angular velocity from [Turtlebot3 Burger Specifications](https://emanual.robotis.com/docs/en/platform/turtlebot3/features/)
-- Send the velocities to the robot to move the robot; follow the comments in ```decisions.py```.
+**For choosing a goal pose:**
+1. Open a terminal and run the mapPublisher.py: ```python3 mapPublisher.py```  
+2. In another terminal run the rviz2 with the given configuration: ```rviz2 -d pathPlanner.rviz```
+3. In another terminal run the decisions.py: ```python3 decisions.py```
+4. On rvzi2 use the 2D goal pose on the toolbar on top to choose the goal pose 
+5. Watch the robot go to the specified point 
 
-Now, you can test your P-controller with the point planner before proceeding:
-- Make sure that the VPN terminal is still running, i.e., ```Tunnel is ready```, and that you can see the robot's topic list;
-- Remember to source your ```.bashrc``` file and set ```ROS_DOMAIN_ID```, in case you did not set up a permenant environment;
-- Undock your robot if needed, and use the teleop node to drive your robot to a free space;
-- Run: ```python3 decision.py --motion point``` and robot should move to the corresponding point specified in ```planner.py```.
+**Note, given that there is limited time and space in the lab, do the necessary for scoring the in-lab marks (see below), and the rest in simulation.**
 
-## Part 5 - Upgrade to PID (20 marks)
-Now that you have implemented a P-controller, proceed with the extension to include the derivative and integral components. You will need to:
-- Implement the error derivative and integral; follow the comments in ```pid.py```;
-- Implement the control laws for PD, PI, PID; follow the comments in ```pid.py```;
-- Add saturation limits (just like in part 4) for the robot's linear and angular velocity; follow the comments in ```controller.py```;
-- Test each controller, i.e., P, PD, PI, and PID, using the point planner; follow the comments in ```controller.py```;
-- Log your errors to evaluate the performance of your controllers (focus on the tuning for P and PID) and to plot them in your report, see the Conclusion section below on reporting;
-- Plot robot pose and errors using the ```plot_errors.py``` for each controller.
-- Tune your code based on the plots; follow the comments in ```decisions.py```.
+**In-lab marks**:
+**Check your allocated time slot for testing. Please try to finish within your allocated time.**
 
-## Part 6 - Perform trajectories and log your error (20 marks)
-Implement more complex trajectories to test the performance of your controllers, follow the comments in ```planner.py```, and ```controller.py```. Cover these two trajectories, while logging the error. 
+- **Show the path execution with at least two goal poses and one heuristic to a TA to score 10 marks. Show the TA where are your goal poses within the map on RViz and what is the used heuristics.**
 
-* Parabola: $y = x^2$ for $x \in [0.0, 1.5]$
-* Sigmoid: $\sigma(x) = {2}/({1 + e^{-2x}}) - 1$ for $x \in [0.0, 2.5]$ 
 
-For real robots, you will need to tune your generated trajectory to make sure it fits into the classroom space.
-Choose one of the controllers among P, PI, PD, PID (you need to provide a reason) and tune your gains to obtain a good performance in terms of tracking:
-Run: ```python3 decision.py --motion trajectory```
-
-Process the errors and visualize the plots to see how your controller is performing. Do a post-process plot with the logged data. You can use the ```plot_errors.py``` file (adapt and modify accordingly).
-
-Try: You can also log your data with a bag file and save it so that you can use it after the lab is over. The bag file allows you to replay all the topics as if you ran the robot again. 
-To record a bag file (you can also check [here](https://docs.ros.org/en/humble/Tutorials/Beginner-CLI-Tools/Recording-And-Playing-Back-Data/Recording-And-Playing-Back-Data.html)):
-- In a terminal, run ```ros2 bag record <topic_name>```, replace ```<topic_name>``` with the list of topics you want to record.
-- To stop recording, simply CTRL+C con the bag recording terminal.
-- To check the info of the bag you recorded ```ros2 bag info <bag_folder_name>```.
-- To play a bag file, in a terminal, run ```ros2 bag play <bag_folder_name>```.
-Note that when playing the bag file, it will play only for the duration for which you recorded it. If you want it to loop, you can add the option ```--loop``` to the bag play command.
-
-*NOTE* do not save all the topics in your bag file, as it would be extremely large, select the ones that you actually need.
-
-**IMPORTANT!! Before you leave, DELETE all of your codes, files, etc.**
-
-## Conclusions - Written report (25 marks)
-You can do this part in the lab (time allowing) or at home. Make sure you have the proper data saved.
+## Conclusions - Written report (30 marks)
+You can do this part in the lab (time allowing) or at home. **Make sure you have the proper data saved**.
 
 Please prepare a written report containing on the front page:
 - Names (Family Name, First Name) of all group members;
 - Student ID of all group members;
 - Station number and robot number.
 
-In a maximum of 3 pages (excluding the front page), report a comparison between the P-controller and the PID one. This report should only have two sections:
+In a maximum of 3 pages (excluding the front page), report the performance of the path planner. This report should contain the following:
 
-* Section 1 - the plot of the logged error for the trajectories. The plot should have, title, label name for axis, legends, different shapes/colors for each error, and grids.
-  * The plots you need to provide are as follows (for those in curly brackets, it is best to have them in one figure):
-    * The plot of P, PID controller for point controller, in which you have for all states for {e-t, edot-t}, and {x-t, y-t, th-t}, and {x-y}, {e-edot}.
-    * For your final chosen controller for part 6, provide the reason and the plot of the parabola and sigmoid trajectories {x-y} only, and if you had the plot of the linear and angular error that was recorded during the trajectory motion execution, then nice to provide that but it is not necessary.
-* Section 2 - A table comparing the P and PID controllers in agility, accuracy, and overshoot numerically **for the point controller only**. You should find the metrics for these three quantities from automatic control concepts/previous control courses. 
+* Describe how you implemented the path planning and navigation for the robot from the planner to the actual motions of the robot, including how the provided code works.
+* Figures illustrating the map, with the trajectories generated for the two goal points overlayed on the map. Make sure to clearly mark the starting and ending locations of the robot.
+* Compare the two different heuristics (Manhattan and Euclidean distances, they can be on the same plot, but use different colors). Discuss the results. Are they different, if yes, why, if not why. Which one is better, and why?
+* See rubrics.md for additional details and marking scheme.
 
 ## Submission
 
-Submit the report and the code on Dropbox (LEARN) in the corresponding folder. Only one submission per group is needed:
-- **Report**: one single pdf, **do not** put the pdf inside the zip file, submit it as an independent file;
-- **Code**: make sure to have commented your code! Submit one single zip file with everything (including the csv files obtained from the data log).
+Submit the report on Crowdmark and the code on Dropbox (LEARN) in the corresponding folder. Only one submission per group on each platform is needed:
+- **Report**: one single pdf, do not put the pdf inside the zip file, submit it as an independent file to Crowdmark, remember to add all group members to a group before submitting;
+- **Code**: make sure to have commented your code! Submit one single zip file with everything (including the csv files obtained from the data log) to Dropbox on LEARN in the folder corresponding to your section.
 
 
 Good luck!

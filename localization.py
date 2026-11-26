@@ -1,87 +1,127 @@
-import argparse
 import sys
+import time
+from utilities import Logger
 
-from utilities import Logger, euler_from_quaternion
 from rclpy.time import Time
-from rclpy.node import Node
 
-from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
+from utilities import *
+from rclpy.node import Node
+from geometry_msgs.msg import Twist
+
+
+from rclpy.qos import QoSProfile
 from nav_msgs.msg import Odometry as odom
 
-from rclpy import init, spin
+from sensor_msgs.msg import Imu
+from kalman_filter import kalman_filter
 
-rawSensor = 0
+from rclpy import init, spin, spin_once
+
+import numpy as np
+import message_filters
+
+
+
+rawSensors=0; kalmanFilter=1
+
+odom_qos=QoSProfile(reliability=1, durability=2, history=1, depth=10)
+
+
 class localization(Node):
     
-    def __init__(self, odom_qos, localizationType=rawSensor):
+    def __init__(self, type, loggerName="robotPose.csv", loggerHeaders=["imu_ax", "imu_ay", "kf_ax", "kf_ay","kf_vx","kf_w","kf_x", "kf_y","stamp"]):
 
         super().__init__("localizer")
         
-        self.loc_logger=Logger("robot_pose.csv", ["x", "y", "theta", "stamp"])
+        
+        self.loc_logger=Logger( loggerName , loggerHeaders)
         self.pose=None
         
-        # Part 3: subscribe to the position sensor topic (Odometry)
-        if localizationType == rawSensor:
-            self.create_subscription(odom, '/odom', self.odom_callback, odom_qos)
+        if type==rawSensors:
+            self.initRawSensors();
+        elif type==kalmanFilter:
+            self.initKalmanfilter()
+            self.kalmanInitialized = False
         else:
-            print("This type doesn't exist", sys.stderr)
+            print("We don't have this type for localization", sys.stderr)
+            return            
     
+        self.timelast=time.time()
     
+    def initRawSensors(self):
+        self.create_subscription(odom, "/odom", self.odom_callback, qos_profile=odom_qos)
+
+    def initKalmanfilter(self):
+        
+        self.odom_sub=message_filters.Subscriber(self, odom, "/odom", qos_profile=odom_qos)
+        self.imu_sub=message_filters.Subscriber(self, Imu, "/imu", qos_profile=odom_qos)
+        
+        time_syncher=message_filters.ApproximateTimeSynchronizer([self.odom_sub, self.imu_sub], queue_size=10, slop=0.1)
+        
+        time_syncher.registerCallback(self.fusion_callback)
+        
+    
+    def fusion_callback(self, odom_msg: odom, imu_msg: Imu):
+
+        if not self.kalmanInitialized:
+            x=np.array([odom_msg.pose.pose.position.x,
+                        odom_msg.pose.pose.position.y,
+                        euler_from_quaternion(odom_msg.pose.pose.orientation),
+                        0,
+                        0,
+                        0])        
+            
+            # TODO PART 5 Put the Q and R matrices
+            # that you conclude from lab Three
+            # DONE
+            Q=np.eye(6) * 0.5
+            R=np.eye(4) * 0.5
+            P=np.eye(6) * 0.5
+                        
+            self.kf=kalman_filter(P,Q,R, x)
+            
+            self.kalmanInitialized = True
+
+        
+        dt = time.time() - self.timelast
+
+        self.timelast=time.time()
+
+
+        z=np.array([odom_msg.twist.twist.linear.x,
+                    odom_msg.twist.twist.angular.z,
+                    imu_msg.linear_acceleration.x,
+                    imu_msg.linear_acceleration.y])
+        
+        self.kf.predict(dt)
+        self.kf.update(z)
+        
+        xhat=self.kf.get_states()
+        
+        self.pose=np.array([xhat[0],
+                            xhat[1],
+                            normalize_angle(xhat[2]),
+                            odom_msg.header.stamp])
+        
     def odom_callback(self, pose_msg):
-        # Part 3: Read x,y, theta, and record the stamp
-        x = pose_msg.pose.pose.position.x
-        y = pose_msg.pose.pose.position.y
+        
+        self.pose=[ pose_msg.pose.pose.position.x,
+                    pose_msg.pose.pose.position.y,
+                    euler_from_quaternion(pose_msg.pose.pose.orientation),
+                    pose_msg.header.stamp]
+        
+        #self.loc_logger.log_values([self.pose[0], self.pose[1], self.pose[2], Time.from_msg(self.pose[3]).nanoseconds])
 
-        quat = [
-            pose_msg.pose.pose.orientation.x,
-            pose_msg.pose.pose.orientation.y,
-            pose_msg.pose.pose.orientation.z,
-            pose_msg.pose.pose.orientation.w
-        ]
-
-        theta = euler_from_quaternion(quat)
-        stamp = pose_msg.header.stamp
-
-        # update the pose
-        self.pose = [x, y, theta, stamp]
-
-        # log the data
-        self.loc_logger.log_values([x, y, theta, Time.from_msg(stamp).nanoseconds])
-    
+        
     def getPose(self):
         return self.pose
 
-# Part 3: Guard that makes the node run, ONLY when run as a main thread!
-# This is to make sure this node functions right before using it in decision.py
-    
-if __name__ == "__main__":
-    argParser = argparse.ArgumentParser(description="Localization node")
-    argParser.add_argument("--env", default="sim", help="Environment to run in (sim or real)")
-    args = argParser.parse_args()
 
+if __name__=="__main__":
+    
     init()
-    # Create proper QoS profile based on environment
-    if args.env == 'sim':
-        qos_profile = QoSProfile(
-            depth=10, 
-            reliability=ReliabilityPolicy.RELIABLE,
-            history=HistoryPolicy.KEEP_LAST
-        )
-    else:
-        qos_profile = QoSProfile(
-            depth=10, 
-            reliability=ReliabilityPolicy.BEST_EFFORT,
-            history=HistoryPolicy.KEEP_LAST
-        )
     
-    localizer=localization(qos_profile, rawSensor)
-
-    try:
-        spin(localizer)
+    LOCALIZER=localization()
     
-    except KeyboardInterrupt:
-        pass
-
-    finally:
-        localizer.loc_logger.save_log()
-        localizer.destroy_node()
+    
+    spin(LOCALIZER)
