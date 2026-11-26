@@ -206,12 +206,8 @@ def search(maze, start, end, heuristic="euclidian", cost_weight = 10.0):
             step_cost = sqrt((child.position[0] - current_node.position[0]) ** 2 +
                              (child.position[1] - current_node.position[1]) ** 2)
 
-            ## we have a cost weight that will encourage the robot to go down 
-            # the center of the hallway (will weight nodes close to walls higher)
-            terrain_cost = cost_weight * maze[child.position[0], child.position[1]]
-
             # from start
-            child.g = current_node.g + step_cost + terrain_cost
+            child.g = current_node.g + step_cost
 
             # to end
             child.h = compute_heuristic(child.position, end_node.position, heuristic)
