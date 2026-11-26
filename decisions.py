@@ -29,7 +29,7 @@ from geometry_msgs.msg import PoseStamped
 class decision_maker(Node):
     
     
-    def __init__(self, publisher_msg, publishing_topic, qos_publisher, rate=10, motion_type=POINT_PLANNER):
+    def __init__(self, publisher_msg, publishing_topic, qos_publisher, heuristic="euclidean", rate=10, motion_type=POINT_PLANNER):
 
         super().__init__("decision_maker")
 
@@ -52,13 +52,13 @@ class decision_maker(Node):
         
         if motion_type==POINT_PLANNER:
             self.controller=controller(klp=0.2, klv=0.5, kap=0.8, kav=0.6)      
-            self.planner=planner(POINT_PLANNER)
+            self.planner=planner(POINT_PLANNER, heuristic=heuristic)
 
         
         elif motion_type==TRAJECTORY_PLANNER:
             # TODO PART 5 Put the gains that you concluded from lab 2
             self.controller=trajectoryController(klp=0.5, klv=0.6, kli=0.1, kap=0.3, kav=0.8, kai=0.1)      
-            self.planner=planner(TRAJECTORY_PLANNER)
+            self.planner=planner(TRAJECTORY_PLANNER, heuristic=heuristic)
         
         else:
             print("Error! you don't have this type of planner", file=sys.stderr)
@@ -169,9 +169,9 @@ def main(args=None):
     odom_qos=QoSProfile(reliability=2, durability=2, history=1, depth=10)
     
     if args.motion == "point":
-        DM=decision_maker(Twist, "/cmd_vel", 10, motion_type=POINT_PLANNER)
+        DM=decision_maker(Twist, "/cmd_vel", 10, motion_type=POINT_PLANNER, heuristic=args.heuristic)
     elif args.motion == "trajectory":
-        DM=decision_maker(Twist, "/cmd_vel", 10, motion_type=TRAJECTORY_PLANNER)
+        DM=decision_maker(Twist, "/cmd_vel", 10, motion_type=TRAJECTORY_PLANNER, heuristic=args.heuristic)
     else:
         print("invalid motion type", file=sys.stderr)
 
@@ -188,6 +188,7 @@ def main(args=None):
 if __name__=="__main__":
     argParser=argparse.ArgumentParser(description="point or trajectory") 
     argParser.add_argument("--motion", type=str, default="trajectory")
+    argParser.add_argument("--heuristic", type=str, default="euclidean")
     args = argParser.parse_args()
 
     main(args)
