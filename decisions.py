@@ -46,18 +46,18 @@ class decision_maker(Node):
         self.reachThreshold=0.15 # 0.15 meters, ADJUST IF NEEDED
 
         # TODO PART 5 your localization type
-        self.localizer=localization(kalmanFilter)
+        self.localizer=localization(rawSensors)
 
 
         
         if motion_type==POINT_PLANNER:
-            self.controller=controller(klp=0.2, klv=0.5, kap=0.8, kav=0.6)      
+            self.controller=controller(klp=0.4, klv=0.5, kli=0.2, kap=0.8, kav=0.6, kai=0.2)      
             self.planner=planner(POINT_PLANNER, heuristic=heuristic)
 
         
         elif motion_type==TRAJECTORY_PLANNER:
             # TODO PART 5 Put the gains that you concluded from lab 2
-            self.controller=trajectoryController(klp=0.5, klv=0.6, kli=0.1, kap=0.3, kav=0.8, kai=0.1)      
+            self.controller=trajectoryController(klp=0.2, klv=0.5, kap=0.9, kav=0.5)      
             self.planner=planner(TRAJECTORY_PLANNER, heuristic=heuristic)
         
         else:
@@ -165,7 +165,8 @@ def main(args=None):
     
     
     init()
-    
+
+    # TODO: not used we can delete this later
     odom_qos=QoSProfile(reliability=2, durability=2, history=1, depth=10)
     
     if args.motion == "point":

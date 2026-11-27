@@ -24,7 +24,7 @@ import message_filters
 
 rawSensors=0; kalmanFilter=1
 
-odom_qos=QoSProfile(reliability=1, durability=2, history=1, depth=10)
+odom_qos=QoSProfile(reliability=2, durability=2, history=1, depth=10)
 
 
 class localization(Node):
@@ -74,9 +74,9 @@ class localization(Node):
             # TODO PART 5 Put the Q and R matrices
             # that you conclude from lab Three
             # DONE
-            Q=np.eye(6) * 0.5
-            R=np.eye(4) * 0.5
-            P=np.eye(6)
+            Q=np.eye(6) * 0.1
+            R=np.eye(4) * 0.4
+            P=np.eye(6) * 0.1
                         
             self.kf=kalman_filter(P,Q,R, x)
             
@@ -110,7 +110,7 @@ class localization(Node):
                     euler_from_quaternion(pose_msg.pose.pose.orientation),
                     pose_msg.header.stamp]
         
-        #self.loc_logger.log_values([self.pose[0], self.pose[1], self.pose[2], Time.from_msg(self.pose[3]).nanoseconds])
+        self.loc_logger.log_values([self.pose[0], self.pose[1], self.pose[2], Time.from_msg(self.pose[3]).nanoseconds])
 
         
     def getPose(self):

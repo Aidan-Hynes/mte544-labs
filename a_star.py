@@ -206,7 +206,7 @@ def search(maze, start, end, heuristic="euclidian", cost_weight=10.0):
             step_cost = sqrt((child.position[0] - current_node.position[0]) ** 2 +
                              (child.position[1] - current_node.position[1]) ** 2)
 
-            terrain_cost = cost_weight * maze[node_position[0], node_position[1]]
+            terrain_cost = cost_weight * maze[child.position[0], child.position[1]]
 
             child.g = current_node.g + step_cost + terrain_cost
 
