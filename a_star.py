@@ -62,7 +62,7 @@ def compute_heuristic(position, end_position, heuristic="euclidean"):
     else:
         raise ValueError(f"Unknown heuristic '{heuristic}'. Choose 'euclidean' or 'manhattan'.")
 
-def search(maze, start, end, heuristic="euclidian"):
+def search(maze, start, end, heuristic="euclidian", cost_weight=10.0):
 
     print("searching ....")
 
@@ -206,8 +206,12 @@ def search(maze, start, end, heuristic="euclidian"):
             step_cost = sqrt((child.position[0] - current_node.position[0]) ** 2 +
                              (child.position[1] - current_node.position[1]) ** 2)
 
+            terrain_cost = cost_weight * maze[node_position[0], node_position[1]]
+
+            child.g = current_node.g + step_cost + terrain_cost
+
             # from start
-            child.g = current_node.g + step_cost
+            # child.g = current_node.g + step_cost
 
             # to end
             child.h = compute_heuristic(child.position, end_node.position, heuristic)
