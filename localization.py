@@ -76,7 +76,7 @@ class localization(Node):
             # DONE
             Q=np.eye(6) * 0.5
             R=np.eye(4) * 0.5
-            P=np.eye(6) * 0.5
+            P=np.eye(6)
                         
             self.kf=kalman_filter(P,Q,R, x)
             
